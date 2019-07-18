@@ -111,3 +111,10 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+*.npy
+*.pkl
+*.swp
+*.txt
+*.jpg
+dump/
+*.yaml
