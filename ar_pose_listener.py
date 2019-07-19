@@ -21,7 +21,7 @@ def callback(data, args):
     qy = data.markers[0].pose.pose.orientation.y
     qz = data.markers[0].pose.pose.orientation.z
     qw = data.markers[0].pose.pose.orientation.w
-
+    print("writing vr infor in to", args[1])
     pose_dict = {
         'position': np.asarray([x, y, z]),
         'orientation': np.asarray([qx, qy, qz, qw])
@@ -33,7 +33,6 @@ def callback(data, args):
         pickle.dump(pose_dict, f)
 
     f.close()
-    print('done you can close me now')
 
 
 def listener():
@@ -42,12 +41,11 @@ def listener():
     parser.add_argument('--out', type=str, required=True)
     args = parser.parse_args()
 
-
     rospy.init_node('listener', anonymous=True)
     rospy.Subscriber('ar_pose_marker', AlvarMarkers, callback, (args.cam_no, args.out))
+    data = rospy.wait_for_message("ar_pose_marker", AlvarMarkers)
+    callback(data, (args.cam_no, args.out))
 
-
-    rospy.spin()
 
 if __name__ == '__main__':
     listener()
