@@ -26,12 +26,13 @@ makedir(dump_depth_folder)
 
 
 
+# dump rgbd, timestamp to folder
 bag_filename = os.path.join(record_root, "CalibData.bag")
 
-num_cam = 1 #config.NUM_CAM
 
+num_cam = config.NUM_CAM
+"""
 for cam_id in range(1, num_cam+1):
-    
     
     # rgb
     dump_rgb_cam_folder = os.path.join(dump_rgb_folder, f"Cam{cam_id}")
@@ -57,32 +58,21 @@ for cam_id in range(1, num_cam+1):
 
     process_rgbd_writer.join()
     process_rosbag_play.join()
-    
-    
-    
-    #### timestamp
-    # rgb
-    """
-    process_timestamp = multiprocessing.Process(target=run_timestamp, args=(cam_id, dump_rgb_cam_folder, "rgb"))
-    process_rosbag_play = multiprocessing.Process(target=run_rosbag_play, args=(bag_filename,))
-    process_timestamp.start()
-    process_rosbag_play.start()
+"""
 
-    process_timestamp.join()
-    process_rosbag_play.join()
+# build timestap compare
+cmd = f"python timeCompare.py --save_dir {dump_folder}"
+for cam_id in range(1, num_cam+1):
+   dump_rgb_cam_folder = os.path.join(dump_rgb_folder, f"Cam{cam_id}")
+   dump_depth_cam_folder = os.path.join(dump_depth_folder, f"Cam{cam_id}")
 
-    process_timestamp = multiprocessing.Process(target=run_timestamp, args=(cam_id, dump_depth_cam_folder, "depth" ))
-    process_rosbag_play = multiprocessing.Process(target=run_rosbag_play, args=(bag_filename,))
-    process_timestamp.start()
-    process_rosbag_play.start()
+   cmd += f" --yaml_color{cam_id}Path "
+   cmd += os.path.join(dump_rgb_cam_folder, "data.yaml")
 
-    process_timestamp.join()
-    process_rosbag_play.join()
-    """
-    
-    
+   cmd += f" --yaml_depth{cam_id}Path "
+   cmd += os.path.join(dump_depth_cam_folder, "data.yaml")
+
+os.system(cmd)
 
 
 
-    #t2.terminate()
-    

@@ -3,6 +3,8 @@ import yaml
 import argparse
 import os
 import pickle
+import ipdb
+st=ipdb.set_trace
 
 '''
     COMMAND FOR RUNNING THE CODE:
@@ -29,6 +31,7 @@ def main():
     parser.add_argument('--yaml_depth4Path', type=str, required=True)
     parser.add_argument('--yaml_depth5Path', type=str, required=True)
     parser.add_argument('--yaml_depth6Path', type=str, required=True)
+    parser.add_argument('--save_dir', type=str, required=True)
 
     args=parser.parse_args()
     if not os.path.exists(args.yaml_color1Path):
@@ -220,7 +223,6 @@ def main():
         indices4.append(ind)
         #import pdb;pdb.set_trace()
         for key in data1.keys():
-            print("data1 Keys:",key)
             if (data1[key]['Timestamp'].secs-data5[key2]['Timestamp'].secs)== 0:
                 count5+=1
                 if count5==1:
@@ -321,7 +323,7 @@ def main():
                         ind=key
         colorInd4.append(ind)
 
-    for i in range(430):
+    for i in range(len(colorData5.keys())):
         count5=0
         for key in colorData5.keys():
             if (colorData5[key]['Timestamp'].secs-data5[i]['Timestamp'].secs)== 0:
@@ -335,7 +337,6 @@ def main():
                         minDiff5=diff
                         ind=key
         colorInd5.append(ind)
-
     for i in indices6:
         count6=0
         for key in colorData6.keys():
@@ -358,10 +359,12 @@ def main():
     
     indexData={"colorIndex1": indices1, "colorIndex2": indices2, "colorIndex3": indices3, "colorIndex4": indices4, "colorIndex5": range(687), "colorIndex6": indices6, "depthIndex1":colorInd1, "depthIndex2":colorInd2, "depthIndex3": colorInd3, "depthIndex4": colorInd4, "depthIndex5": colorInd5, "depthIndex6": colorInd6}
     '''
-
-    pickle.dump(indexData, open("syncedIndexData.pkl", "wb"))
+    print("save", os.path.join(args.save_dir, "syncedIndexData.pkl"))
+    pickle.dump(indexData, open(os.path.join(args.save_dir, "syncedIndexData.pkl"), "wb"))
 
 
 
 if __name__ =="__main__":
+
+
     main()
