@@ -8,30 +8,35 @@ st=ipdb.set_trace
 
 
 t_launch_cam = 15
+t_4hz = 10
+t_data_sync = 10
+t_start_record = t_launch_cam + t_4hz + t_data_sync + 5
+
+
 def run_launch_cameras():
     os.system("source /home/zhouxian/catkin_ws/devel/setup.bash")
     os.system("roslaunch realsense2_camera rs_aligned_depth_multiple_cameras.launch camera1:=camera1 serial_nocamera1:=836612072253 camera2:=camera2 serial_nocamera2:=838212071161 camera3:=camera3 serial_nocamera3:=838212071165 camera4:=camera4 serial_nocamera4:=831612072676 camera5:=camera5 serial_nocamera5:=826212070528 camera6:=camera6 serial_nocamera6:=838212071158")
 
 
 def run_4hz_rgb(cam_id):
-    time.sleep(t_launch_cam )
+    time.sleep(t_launch_cam)
     print(f"reduce frame rate for camera {cam_id}")
-    os.system(f"rosrun topic_tools throttle messages /camera{cam_id}/color/image_raw 4.0")
+    os.system(f"rosrun topic_tools throttle messages /camera{cam_id}/color/image_raw {config.FRAME_RATE}")
 
 def run_4hz_depth(cam_id):
-    time.sleep(t_launch_cam )
+    time.sleep(t_launch_cam)
     print(f"reduce frame rate for camera {cam_id}")
     os.system(f"rosrun topic_tools throttle messages /camera{cam_id}/aligned_depth_to_color/image_raw 4.0")
 
 
 def run_data_sync():
-    time.sleep(t_launch_cam + 10)
+    time.sleep(t_launch_cam + t_4hz)
     print(f"data sync...")
     os.system("python dataSync.py")
 
 
 def run_record_data(data_path):
-    time.sleep(t_launch_cam + 20)
+    time.sleep(t_launch_cam + t_4hz + t_data_sync)
     print(f"=====================START RECORDING in 5 secs===================")
     for t in range(5)[::-1]:
         print("count down:", t)
@@ -68,6 +73,13 @@ all_process.append(process_data_record)
 
 for process in all_process:
     process.start()
+
+#time.sleep(t_start_record + config.duration)
+
+#for process in all_process[::-1]:
+#    process.terminate()
+
+
 
 
 

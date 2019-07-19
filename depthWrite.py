@@ -7,71 +7,17 @@ import cv2
 import os
 import argparse
 import pickle
-
+import ipdb
+st=ipdb.set_trace
 # TODO: Remove this global declaration
 bridge = CvBridge()
 cnt = 0
 cnt1 = 0
 
-def callback_depth(depth, args):
-    print('coming here')
-    global cnt
-    global cnt1
-    save_dir = args[0]
-    if not os.path.exists(save_dir):
-        os.makedirs(save_dir)
-        
-    print('got a depth image')
-    cv_image = bridge.imgmsg_to_cv2(depth, desired_encoding="passthrough")
-    '''
-    save_path = os.path.join(save_dir, 'color_img_{}_{}.jpg'.format(args[1], cnt))
-    cv2.imwrite(save_path, cv2.cvtColor(cv_image, cv2.COLOR_RGB2BGR))
-    cnt+=1
-    print(cv_image)
-    '''
-    with open(os.path.join(save_dir, "cam_{}_{}_color.npy".format(args[1],cnt1)),'wb') as f:
-        #pickle.dump(cv_image, f)
-        np.save(f,cv_image)
-        cnt1+=1
-    f.close()
+def callback(image, args):
+    cv_image = bridge.imgmsg_to_cv2(image, desired_encoding="passthrough")
+    args[0].append(cv_image)
 
-def callback_rgb(rgb, args):
-    print('coming here')
-    global cnt
-    global cnt1
-    save_dir = args[0]
-    if not os.path.exists(save_dir):
-        os.makedirs(save_dir)
-
-    print('got a rgb image')
-    cv_image = bridge.imgmsg_to_cv2(rgb, desired_encoding="passthrough")
-    '''
-    save_path = os.path.join(save_dir, 'color_img_{}_{}.jpg'.format(args[1], cnt))
-    cv2.imwrite(save_path, cv2.cvtColor(cv_image, cv2.COLOR_RGB2BGR))
-    cnt+=1
-    print(cv_image)
-    '''
-    with open(os.path.join(save_dir, "cam_{}_{}_depth.npy".format(args[1],cnt1)),'wb') as f:
-        #pickle.dump(cv_image, f)
-        np.save(f,cv_image)
-        cnt1+=1
-    f.close()
-    '''
-    try:
-        # Convert your ROS Image message to OpenCV2
-        cv2_image = bridge.imgmsg_to_cv2(depth, "passthrough")
-    except CvBridgeError, e:
-        print(e)
-    else:
-        # Save your OpenCV2 image as a jpeg
-        save_path = os.path.join(save_dir, 'color_img_{}_{}.jpg'.format(args[1], cnt))
-        #import pdb; pdb.set_trace()
-        #cv2.imwrite(save_path,cv2_img)
-        cv2.imwrite(save_path, cv2.cvtColor(cv2_image, cv2.COLOR_RGB2BGR))
-        cnt += 1
-    '''
-
-    print('done')
 
 if __name__=="__main__":
     parser = argparse.ArgumentParser()
@@ -79,28 +25,39 @@ if __name__=="__main__":
         help='specify the directory you want to save data to')
     parser.add_argument('--cam_no', type=str, required=True,\
         help='for which camera')
+    parser.add_argument('--mode', type=str, required=True,\
+        help='[depth, rgb]')
+    parser.add_argument('--max_nframes', type=int, default=10000, required=False,\
+        help='for which camera')
 
     args = parser.parse_args()
 
-    if not os.path.exists(args.save_dir):
-        print("Path doesnt exist!")
-        os.makedirs(args.save_dir)
+    #if not os.path.exists(args.save_dir):
+    #    print("Path doesnt exist!")
+    #    os.makedirs(args.save_dir)
 
     rospy.init_node('colorSubscribe')
 
 
-    depth_sub=rospy.Subscriber('/{}/aligned_depth_to_color/image_raw_throttle_sync'.format(args.cam_no),\
-        Image,callback_depth, (args.save_dir, args.cam_no))
+    if args.mode == "depth":
+        sub_name = '/camera{}/aligned_depth_to_color/image_raw_throttle_sync'.format(args.cam_no)
+        prefix = "depth"
+    elif args.mode == "rgb":
+        sub_name = '/camera{}/color/image_raw_throttle_sync'.format(args.cam_no)
+        prefix = "color"
+    else:
+        raise Exception("no such mode for depthWrite")
 
-
-    #rgb_sub=rospy.Subscriber('/{}/color/image_raw_throttle_sync'.format(args.cam_no),\
-    #     Image,callback_rgb, (args.save_dir, args.cam_no))
-
-
-    rospy.sleep(2)
-    rospy.spin()
-    '''
-    rosbag record -O newCalibData1.bag /camera1/color/image_raw_throttle_sync /camera1/aligned_depth_to_color/image_raw_throttle_sync /camera2/color/image_raw_throttle_sync /camera2/aligned_depth_to_color/image_raw_throttle_sync /camera3/color/image_raw_throttle_sync /camera3/aligned_depth_to_color/image_raw_throttle_sync /camera4/color/image_raw_throttle_sync /camera4/aligned_depth_to_color/image_raw_throttle_sync /camera5/color/image_raw_throttle_sync /camera5/aligned_depth_to_color/image_raw_throttle_sync /camera6/color/image_raw_throttle_sync /camera6/aligned_depth_to_color/image_raw_throttle_sync
-
-    rosbag record -O newCalib1.bag /camera1/color/image_raw_throttle_sync /camera2/color/image_raw_throttle_sync /camera3/color/image_raw_throttle_sync /camera4/color/image_raw_throttle_sync /camera5/color/image_raw_throttle_sync /camera6/color/image_raw_throttle_sync
-    '''
+    images_list = []
+    for i in range(args.max_nframes):
+        try:
+            data = rospy.wait_for_message(sub_name, Image, timeout=3.0 if i>0 else None)
+        except rospy.exceptions.ROSException:
+            print("Total number of {} images: ".format(args.mode), i)
+            break
+        callback(data, (images_list,))
+        
+    print("number of {}:".format(args.mode), len(images_list))
+    all_images = np.stack(images_list, 0)
+    with open(os.path.join(args.save_dir, "cam_{}_{}.npy".format(args.cam_no, prefix)),'wb') as f:
+        np.save(f, all_images)
