@@ -7,6 +7,8 @@ import ipdb
 import multiprocessing
 import time
 import subprocess
+import config
+
 st = ipdb.set_trace
 
 
@@ -31,7 +33,13 @@ def after_timeout():
 Get the position related to each camera for the vr tag
 
 """
-data_root = "/home/zhouxian/data/TableDome/"
+#data_root = "/home/zhouxian/data/TableDome/"
+
+data_root = config.data_root
+num_cam = config.NUM_CAM
+
+
+
 
 
 now = datetime.datetime.now()
@@ -47,7 +55,7 @@ print("===========================================")
 # colleting information for the cameras
 vr_tag_data_path = os.path.join(data_path, "vr_tag")
 makedir(vr_tag_data_path)
-num_cam = 6
+#num_cam = 6
 for cam_id in range(1, num_cam+1):
     print("####################calibrate cam {cam_id}##################")
     t1 = multiprocessing.Process(target=run_rosrun, args=(cam_id,))
@@ -59,9 +67,8 @@ for cam_id in range(1, num_cam+1):
     t1.terminate()
     t2.terminate()
 
-os.system("merge_vr_cam.py --data_path data_root  --record_name record_name --num_cam num_cam")
-
-
-
-
-
+print("please put your record name in the config file")
+print(f"record_name = \"{record_name}\"")
+print("If you no longer want it, please delete it with")
+print(f"rm -rf {data_path}")
+print("And remember to put away the vr tag before you start recording!")

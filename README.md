@@ -17,17 +17,14 @@ Users:
 
 
 2. Record
+   0. put away the vr tag
+   1. remember to put your record name in the config.py file
+   2. python3 user_scripts/record.py
+   3. kill the process once you want to finish recording
 
 
+3. Check your record
 
+4. Pack tfrecords
+  1. python packtf.py
 
-
-todo:
-I need 3 scripts: (can potentially merge them, but let's do 3 steps)
-
-script1: 
-    calibrate
-script2: (merge 2 and 3? stop after a minute)
-    record
-script3:
-    pack?
