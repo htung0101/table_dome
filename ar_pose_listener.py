@@ -7,10 +7,11 @@ import pickle
 import os
 import argparse
 import numpy as np
+import ipdb
+st = ipdb.set_trace
 
 def callback(data, args):
     cam_no = args[0]
-
     x = data.markers[0].pose.pose.position.x
     y = data.markers[0].pose.pose.position.y
     z = data.markers[0].pose.pose.position.z
@@ -26,7 +27,9 @@ def callback(data, args):
         'orientation': np.asarray([qx, qy, qz, qw])
     }
     
-    with open('/home/zhouxian/catkin_ws/src/calibrate/src/scripts/cam_{}_pose1111111111.txt'.format(cam_no), 'wb') as f:
+    #'/home/zhouxian/catkin_ws/src/calibrate/src/scripts/cam_{}_pose1111111111.txt'.format(cam_no)
+
+    with open(args[1], 'wb') as f:
         pickle.dump(pose_dict, f)
 
     f.close()
@@ -36,10 +39,12 @@ def callback(data, args):
 def listener():
     parser = argparse.ArgumentParser()
     parser.add_argument('--cam_no', type=int, required=True)
+    parser.add_argument('--out', type=str, required=True)
     args = parser.parse_args()
 
+
     rospy.init_node('listener', anonymous=True)
-    rospy.Subscriber('ar_pose_marker', AlvarMarkers, callback, (args.cam_no,))
+    rospy.Subscriber('ar_pose_marker', AlvarMarkers, callback, (args.cam_no, args.out))
 
 
     rospy.spin()
