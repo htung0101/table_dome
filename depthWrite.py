@@ -13,7 +13,7 @@ bridge = CvBridge()
 cnt = 0
 cnt1 = 0
 
-def callback1(depth, args):
+def callback_depth(depth, args):
     print('coming here')
     global cnt
     global cnt1
@@ -30,6 +30,28 @@ def callback1(depth, args):
     print(cv_image)
     '''
     with open(os.path.join(save_dir, "cam_{}_{}_color.npy".format(args[1],cnt1)),'wb') as f:
+        #pickle.dump(cv_image, f)
+        np.save(f,cv_image)
+        cnt1+=1
+    f.close()
+
+def callback_rgb(rgb, args):
+    print('coming here')
+    global cnt
+    global cnt1
+    save_dir = args[0]
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
+
+    print('got a rgb image')
+    cv_image = bridge.imgmsg_to_cv2(rgb, desired_encoding="passthrough")
+    '''
+    save_path = os.path.join(save_dir, 'color_img_{}_{}.jpg'.format(args[1], cnt))
+    cv2.imwrite(save_path, cv2.cvtColor(cv_image, cv2.COLOR_RGB2BGR))
+    cnt+=1
+    print(cv_image)
+    '''
+    with open(os.path.join(save_dir, "cam_{}_{}_depth.npy".format(args[1],cnt1)),'wb') as f:
         #pickle.dump(cv_image, f)
         np.save(f,cv_image)
         cnt1+=1
@@ -51,9 +73,6 @@ def callback1(depth, args):
 
     print('done')
 
-
-
-    print('done')
 if __name__=="__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--save_dir', type=str, required=True,\
@@ -68,10 +87,16 @@ if __name__=="__main__":
         os.makedirs(args.save_dir)
 
     rospy.init_node('colorSubscribe')
-    # depth_sub=rospy.Subscriber('/{}/aligned_depth_to_color/image_raw_throttle_sync'.format(args.cam_no),\
-    #     Image,callback1, (args.save_dir, args.cam_no))
-    depth_sub=rospy.Subscriber('/{}/color/image_raw_throttle_sync'.format(args.cam_no),\
-        Image,callback1, (args.save_dir, args.cam_no))
+
+
+    depth_sub=rospy.Subscriber('/{}/aligned_depth_to_color/image_raw_throttle_sync'.format(args.cam_no),\
+        Image,callback_depth, (args.save_dir, args.cam_no))
+
+
+    #rgb_sub=rospy.Subscriber('/{}/color/image_raw_throttle_sync'.format(args.cam_no),\
+    #     Image,callback_rgb, (args.save_dir, args.cam_no))
+
+
     rospy.sleep(2)
     rospy.spin()
     '''

@@ -13,10 +13,16 @@ def run_launch_cameras():
     os.system("roslaunch realsense2_camera rs_aligned_depth_multiple_cameras.launch camera1:=camera1 serial_nocamera1:=836612072253 camera2:=camera2 serial_nocamera2:=838212071161 camera3:=camera3 serial_nocamera3:=838212071165 camera4:=camera4 serial_nocamera4:=831612072676 camera5:=camera5 serial_nocamera5:=826212070528 camera6:=camera6 serial_nocamera6:=838212071158")
 
 
-def run_4hz(cam_id):
+def run_4hz_rgb(cam_id):
     time.sleep(t_launch_cam )
     print(f"reduce frame rate for camera {cam_id}")
     os.system(f"rosrun topic_tools throttle messages /camera{cam_id}/color/image_raw 4.0")
+
+def run_4hz_depth(cam_id):
+    time.sleep(t_launch_cam )
+    print(f"reduce frame rate for camera {cam_id}")
+    os.system(f"rosrun topic_tools throttle messages /camera{cam_id}/aligned_depth_to_color/image_raw 4.0")
+
 
 def run_data_sync():
     time.sleep(t_launch_cam + 10)
@@ -47,7 +53,9 @@ all_process.append(process_cam_launch)
 processes_cam_hertz = []
 for cam_id in range(1, num_cam+1):
     processes_cam_hertz.append(
-        multiprocessing.Process(target=run_4hz, args=(cam_id,)))
+        multiprocessing.Process(target=run_4hz_rgb, args=(cam_id,)))
+    processes_cam_hertz.append(
+        multiprocessing.Process(target=run_4hz_depth, args=(cam_id,)))
 all_process += processes_cam_hertz
 
 process_data_sync = multiprocessing.Process(target=run_data_sync, args=())
