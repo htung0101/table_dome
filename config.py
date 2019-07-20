@@ -6,4 +6,4 @@ FRAME_RATE = 4.0
 
 
 data_root = "/home/zhouxian/data/TableDome"
-record_name = "TableDome_y2019_m7_h0_m32_s5"
+record_name = "TableDome_y2019_m7_h21_m38_s22"

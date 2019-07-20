@@ -1,5 +1,5 @@
 import os
-from open3d import *
+from Open3D.src.Python import *
 import numpy as np
 
 def get_inlier_idxs(pts):

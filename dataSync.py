@@ -6,6 +6,7 @@ from sensor_msgs.msg import CameraInfo
 import rosbag
 
 def pubLishImages(image1, image2, image3, image4, image5, image6, adepth1, adepth2, adepth3, adepth4, adepth5, adepth6):
+    """
     print("CALLBACK")
     print('---------- TIME ------------')
     print("Image1: ",image1.header.stamp)
@@ -20,7 +21,7 @@ def pubLishImages(image1, image2, image3, image4, image5, image6, adepth1, adept
     print("adepth4: ",adepth4.header.stamp)
     print("adepth5: ",adepth5.header.stamp)
     print("adepth6: ",adepth6.header.stamp)
-
+    """
     # NOTE: save all these in the directory
    
     #print "got Synced Images"
