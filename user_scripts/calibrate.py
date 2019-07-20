@@ -12,12 +12,17 @@ import config
 st = ipdb.set_trace
 
 
+def run_launch_cameras():
+    os.system("source /home/zhouxian/catkin_ws/devel/setup.bash")
+    os.system("roslaunch realsense2_camera rs_aligned_depth_multiple_cameras.launch camera1:=camera1 serial_nocamera1:=836612072253 camera2:=camera2 serial_nocamera2:=838212071161 camera3:=camera3 serial_nocamera3:=838212071165 camera4:=camera4 serial_nocamera4:=831612072676 camera5:=camera5 serial_nocamera5:=826212070528 camera6:=camera6 serial_nocamera6:=838212071158")
+
 
 
 def run_rosrun(cam_id):
    os.system(f"rosrun ar_track_alvar individualMarkersNoKinect 5.6 0.08 0.2 /camera{cam_id}/color/image_raw /camera1/aligned_depth_to_color/camera_info /camera{cam_id}_color_optical_frame")
 
 def run_vr_tag_save(cam_id, data_path):
+   time.sleep(2)
    vr_tag_filename = os.path.join(data_path, f"camera{cam_id}_vr_tag.pkl")
    print(vr_tag_filename)
    os.system(f"python ar_pose_listener.py --cam_no {cam_id} --out {vr_tag_filename}") 
@@ -27,6 +32,8 @@ def after_timeout():
     print("KILL MAIN THREAD: %s" % threading.currentThread().ident) 
     raise SystemExit 
 
+def run_intrinsic_writer(num_cam, save_dir):
+    os.system(f"python intrinsics_write_all.py --num_cam {num_cam} --save_dir {save_dir}")
 
 
 """
@@ -39,9 +46,6 @@ data_root = config.data_root
 num_cam = config.NUM_CAM
 
 
-
-
-
 now = datetime.datetime.now()
 # maybe add user name that will be cute
 record_name = f"TableDome_y{now.year}_m{now.month}_h{now.hour}_m{now.minute}_s{now.second}"
@@ -51,21 +55,31 @@ makedir(data_path)
 print("===========================================")
 print("You are recroding things into:", data_path)
 print("===========================================")
-
+#t0 = multiprocessing.Process(target=run_launch_cameras, args=())
+#t0.start()
 # colleting information for the cameras
 vr_tag_data_path = os.path.join(data_path, "vr_tag")
 makedir(vr_tag_data_path)
-#num_cam = 6
 for cam_id in range(1, num_cam+1):
-    print("####################calibrate cam {cam_id}##################")
+    print(f"####################calibrate cam {cam_id}##################")
     t1 = multiprocessing.Process(target=run_rosrun, args=(cam_id,))
     t2 = multiprocessing.Process(target=run_vr_tag_save, args=(cam_id, vr_tag_data_path,))
     t1.start()
     t2.start()
-    time.sleep(3)
+    time.sleep(5)
 
     t1.terminate()
     t2.terminate()
+
+print("################## get intrinsics ############################3")
+t1 = multiprocessing.Process(target=run_intrinsic_writer, args=(num_cam, vr_tag_data_path))
+
+t1.start()
+time.sleep(3)
+
+t1.terminate()
+
+#t0.terminate()
 
 print("please put your record name in the config file")
 print(f"record_name = \"{record_name}\"")

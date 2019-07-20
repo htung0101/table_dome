@@ -72,9 +72,10 @@ def process_xyz(depth,pix_T_cam):
                      mode='constant', constant_values=0)
     return xyz
 
-def job(folderName):
-    data_dir = '/projects/katefgroup/gauravp/{}'.format(folderName)
-    
+def job(data_dir, save_dir):
+
+    #data_dir = '/projects/katefgroup/gauravp/{}'.format(folderName)
+    st()
     color_dir = '%s/colorData' % data_dir
     depth_dir = '%s/depthData' % data_dir
 
@@ -244,7 +245,7 @@ def job(folderName):
                     empty_xyz_camXs_raw = empty_xyz_camXs.tostring()
 
 
-
+                """
                 comptype = tf.python_io.TFRecordCompressionType.GZIP
                 compress = tf.python_io.TFRecordOptions(compression_type=comptype)
                 writer = tf.python_io.TFRecordWriter(out_f, options=compress)
@@ -261,6 +262,9 @@ def job(folderName):
                 example = tf.train.Example(features=tf.train.Features(feature=feature))
                 writer.write(example.SerializeToString())
                 writer.close()
+                """
+
+
 
                 sys.stdout.write('.')
             sys.stdout.flush()
@@ -268,17 +272,17 @@ def job(folderName):
     # done frames
     print 'done'
 
-def main(do_parallel):
+def main():
     # folders = ["Data2","Data3","Data4","Data5","Data6","Data7","Data9","Data10","Data11","Data12","Data13","newData1","newData2","newData5"]
-    folders = ["Data3"]
-    if do_parallel:
-        if do_parallel:
-            p = pp.ProcessPool(8)
-            p.map(job,folders)
-    else:
-        for i in folders:
-            job(i)
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--save_dir', type=str, required=True,\
+        help='specify the directory you want to save data to')
+    parser.add_argument('--data_dir', type=str, required=True,\
+        help='for which camera')
+    args = parser.parse_args()
+    job(args.data_dir, args.save_dir)
 
 
 if __name__ == '__main__':
-    main(False)
+    main()
+    # python packtf.py --save_dir

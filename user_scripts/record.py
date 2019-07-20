@@ -52,8 +52,8 @@ all_process = []
 num_cam = config.NUM_CAM
 
 
-process_cam_launch = multiprocessing.Process(target=run_launch_cameras, args=())
-all_process.append(process_cam_launch)
+#process_cam_launch = multiprocessing.Process(target=run_launch_cameras, args=())
+#all_process.append(process_cam_launch)
 
 processes_cam_hertz = []
 for cam_id in range(1, num_cam+1):

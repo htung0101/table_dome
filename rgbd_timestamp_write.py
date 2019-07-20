@@ -2,6 +2,7 @@
 import rospy
 import numpy as np
 from sensor_msgs.msg import Image
+from sensor_msgs.msg import CameraInfo
 from cv_bridge import CvBridge, CvBridgeError
 import cv2
 import os
@@ -61,7 +62,7 @@ if __name__=="__main__":
             print("Total number of {} images: ".format(args.mode), i)
             break
         callback(data, (list_images, list_msg))
-        
+
     print("number of {}:".format(args.mode), len(list_images))
     all_images = np.stack(list_images, 0)
     with open(os.path.join(args.save_dir, "cam_{}_{}.npy".format(args.cam_no, prefix)),'wb') as f:

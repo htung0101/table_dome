@@ -18,7 +18,7 @@ def infoCallback1(msg, args):
         cam_no = args[0]
         save_dict = args[1]
         K = np.asarray(msg.K).reshape(3, 3)
-        save_dict['cam_{}_depth_intrinsics'.format(cam_no)] = K
+        save_dict['cam_{}_intrinsics'.format(cam_no)] = K
         camera_1_rec_flag = True
 
 def infoCallback2(msg, args):
@@ -28,7 +28,7 @@ def infoCallback2(msg, args):
         cam_no = args[0]
         save_dict = args[1]
         K = np.asarray(msg.K).reshape(3, 3)
-        save_dict['cam_{}_depth_intrinsics'.format(cam_no)] = K
+        save_dict['cam_{}_intrinsics'.format(cam_no)] = K
         camera_2_rec_flag = True
 
 def infoCallback3(msg, args):
@@ -38,7 +38,7 @@ def infoCallback3(msg, args):
         cam_no = args[0]
         save_dict = args[1]
         K = np.asarray(msg.K).reshape(3, 3)
-        save_dict['cam_{}_depth_intrinsics'.format(cam_no)] = K
+        save_dict['cam_{}_intrinsics'.format(cam_no)] = K
         camera_3_rec_flag = True
 
 def infoCallback4(msg, args):
@@ -48,7 +48,7 @@ def infoCallback4(msg, args):
         cam_no = args[0]
         save_dict = args[1]
         K = np.asarray(msg.K).reshape(3, 3)
-        save_dict['cam_{}_depth_intrinsics'.format(cam_no)] = K
+        save_dict['cam_{}_intrinsics'.format(cam_no)] = K
         camera_4_rec_flag = True
 
 def infoCallback5(msg, args):
@@ -58,7 +58,7 @@ def infoCallback5(msg, args):
         cam_no = args[0]
         save_dict = args[1]
         K = np.asarray(msg.K).reshape(3, 3)
-        save_dict['cam_{}_depth_intrinsics'.format(cam_no)] = K
+        save_dict['cam_{}_intrinsics'.format(cam_no)] = K
         camera_5_rec_flag = True
 
 def infoCallback6(msg, args):
@@ -68,7 +68,7 @@ def infoCallback6(msg, args):
         cam_no = args[0]
         save_dict = args[1]
         K = np.asarray(msg.K).reshape(3, 3)
-        save_dict['cam_{}_depth_intrinsics'.format(cam_no)] = K
+        save_dict['cam_{}_intrinsics'.format(cam_no)] = K
         camera_6_rec_flag = True
 
 def main(**kwargs):
@@ -95,4 +95,4 @@ def main(**kwargs):
     rospy.spin()
 
 if __name__ == '__main__':
-     main(pkl_file_path="/home/zhouxian/newCalibrate/all_data_new_calib.pkl")
+     main(pkl_file_path="/home/zhouxian/catkin_ws/src/calibrate/src/scripts/all_data.pkl")
