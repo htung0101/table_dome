@@ -100,8 +100,8 @@ def main():
     # then I will use the extrinsics to rotate and bring them all in ar_marker frame
     NUM_CAMERAS = 6
     points_from_camera = {}
-    depthImgPath = '/home/zhouxian/newCalibrate/Data1/depthData'
-    colorImgPath = '/home/zhouxian/newCalibrate/Data1/colorData'
+    depthImgPath = '/home/zhouxian/newCalibrate/newData5/depthData'
+    colorImgPath = '/home/zhouxian/newCalibrate/newData5/colorData'
 
     '''
     for cam_no in range(NUM_CAMERAS):
@@ -113,9 +113,9 @@ def main():
     for cam_no in range(NUM_CAMERAS):
         print((cam_no+1))
         #import pdb; pdb.set_trace()
-        depth_image=np.load(depthImgPath + '/Cam{}/cam_camera{}_20_depth.npy'.format(cam_no+1,cam_no+1), allow_pickle = True)
+        depth_image=np.load(depthImgPath + '/Cam{}/cam{}_depth_20.npy'.format(cam_no+1,cam_no+1), allow_pickle = True)
         points = unproject_(depth_image,\
-                all_data['cam_{}_depth_intrinsics'.format(cam_no+1)],
+                all_data['cam_{}_intrinsics'.format(cam_no+1)],
                 from_numpy=True, using_cropped=False)
         
         # first view these points in ar_marker frame and then move ahead

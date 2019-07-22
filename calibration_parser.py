@@ -82,8 +82,8 @@ def main():
     # cam_5_to_0 = np.linalg.inv(cam_0_to_5)
 
     # TODO: Amazingly bad code.
-    ar_marker_in_cam0_pos = np.asarray([0.0341482351409, -0.00832891337583, 0.369164266858])
-    quat_pose = np.asarray([-0.219903190751, -0.660172128305, 0.671450363539, -0.254891657395])
+    ar_marker_in_cam0_pos = np.asarray([0.033708170634, -0.00375562360011, 0.364728765928])
+    quat_pose = np.asarray([-0.231619226896, -0.653634305559, 0.677730773245, -0.244531648922])
 
     pose_matrix = transformations.quaternion_matrix(quat_pose)
     pose_matrix[0:3, 3] = ar_marker_in_cam0_pos

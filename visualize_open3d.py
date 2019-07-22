@@ -1,5 +1,5 @@
 import os
-from Open3D.src.Python import *
+import open3d as o3d
 import numpy as np
 
 def get_inlier_idxs(pts):
@@ -24,45 +24,45 @@ def main():
     inlier_idxs = get_inlier_idxs(pts)
     pts = pts[inlier_idxs, :]
 
-    pcd = PointCloud()
-    pcd.points = Vector3dVector(pts)
+    pcd = o3d.geometry.PointCloud()
+    pcd.points = o3d.utility.Vector3dVector(pts)
 
     pts1 = np.load(os.path.join(save_dir, 'downsampled_points_cam2inartag_new.npy'))
     inlier_idxs1 = get_inlier_idxs(pts1)
     pts1 = pts1[inlier_idxs1, :]
-    pcd1 = PointCloud()
-    pcd1.points = Vector3dVector(pts1)
+    pcd1 = o3d.geometry.PointCloud()
+    pcd1.points = o3d.utility.Vector3dVector(pts1)
 
     pts2 = np.load(os.path.join(save_dir, 'downsampled_points_cam3inartag_new.npy'))
     inlier_idxs2 = get_inlier_idxs(pts2)
     pts2 = pts2[inlier_idxs2, :]
-    pcd2 = PointCloud()
-    pcd2.points = Vector3dVector(pts2)
+    pcd2 = o3d.geometry.PointCloud()
+    pcd2.points = o3d.utility.Vector3dVector(pts2)
 
     pts3 = np.load(os.path.join(save_dir, 'downsampled_points_cam4inartag_new.npy'))
     inlier_idxs3 = get_inlier_idxs(pts3)
     pts3 = pts3[inlier_idxs3, :]
-    pcd3 = PointCloud()
-    pcd3.points = Vector3dVector(pts3)
+    pcd3 = o3d.geometry.PointCloud()
+    pcd3.points = o3d.utility.Vector3dVector(pts3)
 
     pts4 = np.load(os.path.join(save_dir, 'downsampled_points_cam5inartag_new.npy'))
     inlier_idxs4 = get_inlier_idxs(pts4)
     pts4 = pts4[inlier_idxs4, :]
-    pcd4 = PointCloud()
-    pcd4.points = Vector3dVector(pts4)
+    pcd4 = o3d.geometry.PointCloud()
+    pcd4.points = o3d.utility.Vector3dVector(pts4)
 
     pts5 = np.load(os.path.join(save_dir, 'downsampled_points_cam6inartag_new.npy'))
     inlier_idxs5 = get_inlier_idxs(pts5)
     pts5 = pts5[inlier_idxs5, :]
-    pcd5 = PointCloud()
-    pcd5.points = Vector3dVector(pts5)
+    pcd5 = o3d.geometry.PointCloud()
+    pcd5.points = o3d.utility.Vector3dVector(pts5)
 
-    frame = geometry.create_mesh_coordinate_frame(
-        size=0.3, origin=[0, 0, 0]
-    )
+    # frame = o3d.geometry.create_mesh_coordinate_frame(
+    #     size=0.3, origin=[0, 0, 0]
+    # )
 
-    #draw_geometries([pcd1, pcd, pcd2, pcd3, pcd4, pcd5, frame])
-    draw_geometries([pcd1, pcd2, pcd3])
+    o3d.visualization.draw_geometries([pcd1, pcd, pcd2, pcd3])
+    #o3d.visualization.draw_geometries([pcd1, pcd2, pcd3])
 
     from IPython import embed; embed()
 

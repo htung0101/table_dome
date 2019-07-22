@@ -9,9 +9,11 @@ Users:
    table_dome
 
    to come to this folder
-  2. in a terminal, do:
+  2. make sure you have another window running "roscore"
 
-  source devel/setup.bash
+  3. in a terminal, do:
+
+  source /home/zhouxian/catkin_ws/devel/setup.bash
   roslaunch realsense2_camera rs_aligned_depth_multiple_cameras.launch camera1:=camera1 serial_nocamera1:=836612072253 camera2:=camera2 serial_nocamera2:=838212071161 camera3:=camera3 serial_nocamera3:=838212071165 camera4:=camera4 serial_nocamera4:=831612072676 camera5:=camera5 serial_nocamera5:=826212070528 camera6:=camera6 serial_nocamera6:=838212071158
 
   make sure you get some yellow messages saying [WARN][...]Hardware x, Error
@@ -20,6 +22,12 @@ Users:
 
 
 1. Calibrate
+   checkerboard calibrate
+   0. source /home/zhouxian/kalibr_workspace/devel/setup.bash
+   1. python3 user_scrtips/checkerboard_calibrate.py
+   note: this one giveS me the CamX_T_CamY
+
+   artag_calibration
    0. put the ar tag on the table (with the correct orientation)
    1. python3 user_scripts/calibrate.py
 

@@ -45,7 +45,7 @@ def run_record_data(data_path):
 
 
     bag_file_name = os.path.join(data_path, "CalibData.bag")
-    os.system(f"rosbag record -O {bag_file_name} /camera1/color/image_raw_throttle_sync /camera1/aligned_depth_to_color/image_raw_throttle_sync /camera2/color/image_raw_throttle_sync /camera2/aligned_depth_to_color/image_raw_throttle_sync /camera3/color/image_raw_throttle_sync /camera3/aligned_depth_to_color/image_raw_throttle_sync /camera4/color/image_raw_throttle_sync /camera4/aligned_depth_to_color/image_raw_throttle_sync /camera5/color/image_raw_throttle_sync /camera5/aligned_depth_to_color/image_raw_throttle_sync /camera6/color/image_raw_throttle_sync /camera6/aligned_depth_to_color/image_raw_throttle_sync"
+    os.system(f"rosbag record -o {bag_file_name} /camera1/color/image_raw_throttle_sync /camera1/aligned_depth_to_color/image_raw_throttle_sync /camera2/color/image_raw_throttle_sync /camera2/aligned_depth_to_color/image_raw_throttle_sync /camera3/color/image_raw_throttle_sync /camera3/aligned_depth_to_color/image_raw_throttle_sync /camera4/color/image_raw_throttle_sync /camera4/aligned_depth_to_color/image_raw_throttle_sync /camera5/color/image_raw_throttle_sync /camera5/aligned_depth_to_color/image_raw_throttle_sync /camera6/color/image_raw_throttle_sync /camera6/aligned_depth_to_color/image_raw_throttle_sync"
     )
 
 all_process = []

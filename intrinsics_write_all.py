@@ -21,10 +21,6 @@ def main(**kwargs):
     args=parser.parse_args()
 
 
-    #with open(kwargs['pkl_file_path'], 'rb') as f:
-    #    save_dict = pickle.load(f)
-    #f.close()
-
     rospy.init_node('info_subscribe')
 
     list_intrinsics = dict()
@@ -39,4 +35,4 @@ def main(**kwargs):
 
 
 if __name__ == '__main__':
-     main(pkl_file_path="/home/zhouxian/catkin_ws/src/calibrate/src/scripts/all_data.pkl")
+     main()

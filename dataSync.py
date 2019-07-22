@@ -78,8 +78,11 @@ aligned_depth4_sub=Subscriber('/camera4/aligned_depth_to_color/image_raw_throttl
 aligned_depth5_sub=Subscriber('/camera5/aligned_depth_to_color/image_raw_throttle', Image)
 aligned_depth6_sub=Subscriber('/camera6/aligned_depth_to_color/image_raw_throttle', Image)
 
-ats = ApproximateTimeSynchronizer([image1_sub, image2_sub, image3_sub, image4_sub, image5_sub, image6_sub, aligned_depth1_sub, aligned_depth2_sub, aligned_depth3_sub, aligned_depth4_sub, aligned_depth5_sub, aligned_depth6_sub], queue_size=20, slop=0.30)
+ats = ApproximateTimeSynchronizer([image1_sub, image2_sub, image3_sub, image4_sub, image5_sub, image6_sub, aligned_depth1_sub, aligned_depth2_sub, aligned_depth3_sub, aligned_depth4_sub, aligned_depth5_sub, aligned_depth6_sub], queue_size=30, slop=0.30)
 
 ats.registerCallback(pubLishImages)
 
-rospy.spin()
+try:
+    rospy.spin()
+except KeyboardInterrupt:
+    print("Shutting down")
