@@ -94,16 +94,16 @@ def main():
     # NOTE: this is only used to get the camera extrinsics and color img which is
     # not even required as of now.
     data_path = os.path.join(config.data_root, config.record_name)
-    vr_data_path = os.path.join(data_path, "vr_tag")
+    ar_data_path = os.path.join(data_path, "ar_tag")
     num_cam = config.NUM_CAM
 
-    intrinsic_f = open(os.path.join(vr_data_path, "intrinsics.pkl"), "rb")
+    intrinsic_f = open(os.path.join(ar_data_path, "intrinsics.pkl"), "rb")
     intrinsic_mat =  pickle.load(intrinsic_f)
     frame_id = 10
     pcd_list = []
     for cam_id in range(1, 1+num_cam):
-        vr_tag_f = open(os.path.join(vr_data_path, "camera{}_vr_tag.pkl".format(cam_id)), "rb")
-        artag_T_camX = quat_to_matrix(pickle.load(vr_tag_f))
+        ar_tag_f = open(os.path.join(ar_data_path, "camera{}_ar_tag.pkl".format(cam_id)), "rb")
+        artag_T_camX = quat_to_matrix(pickle.load(ar_tag_f))
         camX_T_artag = tf.transformations.inverse_matrix(artag_T_camX)
         intrinsic_camX = intrinsic_mat[str(cam_id)]
 

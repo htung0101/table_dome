@@ -9,6 +9,7 @@ def pubLishImages(image1, image2, image3, image4, image5, image6):
     if the difference is below threshold writes out all the images else continues
     """
     # print "CALLBACK"
+    """
     print('---------- TIME ------------')
     print("Image1: ",image1.header.stamp)
     print("Image2: ",image2.header.stamp)
@@ -16,7 +17,7 @@ def pubLishImages(image1, image2, image3, image4, image5, image6):
     print("Image4: ",image4.header.stamp)
     print("Image5: ",image5.header.stamp)
     print("Image6: ",image6.header.stamp)
-
+    """
     # NOTE: save all these in the directory
    
     #print "got Synced Images"

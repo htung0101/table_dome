@@ -1,7 +1,11 @@
 import os
+import sys
+import datetime
 import multiprocessing
-import config
 import time
+
+import config
+from utils.path import makedir
 import ipdb
 st=ipdb.set_trace
 # start the camera by running roslaunch
@@ -45,8 +49,50 @@ def run_record_data(data_path):
 
 
     bag_file_name = os.path.join(data_path, "CalibData.bag")
-    os.system(f"rosbag record -o {bag_file_name} /camera1/color/image_raw_throttle_sync /camera1/aligned_depth_to_color/image_raw_throttle_sync /camera2/color/image_raw_throttle_sync /camera2/aligned_depth_to_color/image_raw_throttle_sync /camera3/color/image_raw_throttle_sync /camera3/aligned_depth_to_color/image_raw_throttle_sync /camera4/color/image_raw_throttle_sync /camera4/aligned_depth_to_color/image_raw_throttle_sync /camera5/color/image_raw_throttle_sync /camera5/aligned_depth_to_color/image_raw_throttle_sync /camera6/color/image_raw_throttle_sync /camera6/aligned_depth_to_color/image_raw_throttle_sync"
+    os.system(f"rosbag record -O {bag_file_name} /camera1/color/image_raw_throttle_sync /camera1/aligned_depth_to_color/image_raw_throttle_sync /camera2/color/image_raw_throttle_sync /camera2/aligned_depth_to_color/image_raw_throttle_sync /camera3/color/image_raw_throttle_sync /camera3/aligned_depth_to_color/image_raw_throttle_sync /camera4/color/image_raw_throttle_sync /camera4/aligned_depth_to_color/image_raw_throttle_sync /camera5/color/image_raw_throttle_sync /camera5/aligned_depth_to_color/image_raw_throttle_sync /camera6/color/image_raw_throttle_sync /camera6/aligned_depth_to_color/image_raw_throttle_sync"
     )
+
+def check_artag_folder(artag_folder, data_path):
+    artag_folder_ = os.path.join(artag_folder, "ar_tag")
+    if not os.path.exists(artag_folder_):
+        print("ar_tag file does not exists, please check again: ", artag_folder_)
+        sys.exit()
+
+    for cam_id in range(1, config.NUM_CAM+1):
+        if not os.path.isfile(os.path.join(artag_folder_, f"camera{cam_id}_ar_tag.pkl")):
+            print("ar tag folder is invalid", f"camera{cam_id}_ar_tag.pkl does not exists")
+            sys.exit()
+    if not os.path.isfile(os.path.join(artag_folder_, "intrinsics.pkl")):
+        print("ar tag folder is invalid", "intrinsics.pkl does not exists")
+        sys.exit()
+
+    if artag_folder != data_path:
+        new_artag_folder = data_path
+        makedir(new_artag_folder)
+        os.system(f"scp -r {artag_folder_} {new_artag_folder}")
+
+def get_record_name():
+
+    # check the setting
+    is_new_record_name = False
+    record_name = config.record_name
+    if config.artag_folder == "":
+        print("artag_folder is empty in config file")
+        print("Please do the calibration first or set artag_folder")
+        sys.exit()
+    elif config.record_name == "":
+        is_new_record_name = True
+        now = datetime.datetime.now()
+        # maybe add user name that will be cute
+        record_name = config.data_prefix + f"_TableDome_y{now.year}_m{now.month}_h{now.hour}_m{now.minute}_s{now.second}"
+        data_path = os.path.join(config.data_root, record_name)
+        makedir(data_path)
+    return is_new_record_name, record_name
+
+is_new_record_name, record_name = get_record_name()
+data_path = os.path.join(config.data_root, record_name)
+check_artag_folder(config.artag_folder, data_path)
+
 
 all_process = []
 num_cam = config.NUM_CAM
@@ -66,7 +112,8 @@ all_process += processes_cam_hertz
 process_data_sync = multiprocessing.Process(target=run_data_sync, args=())
 all_process.append(process_data_sync)
 
-data_path = os.path.join(config.data_root, config.record_name)
+# check if the calibration is there and record the name
+
 process_data_record = multiprocessing.Process(target=run_record_data, args=(data_path,))
 
 all_process.append(process_data_record)
@@ -78,7 +125,14 @@ for process in all_process:
 
 #for process in all_process[::-1]:
 #    process.terminate()
-
+try:
+    while(True):
+        pass
+except KeyboardInterrupt:
+    if is_new_record_name:
+        print("You have created a new record name,")
+        print("please put your record name in the config file")
+        print(f"record_name = \"{record_name}\"")
 
 
 

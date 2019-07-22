@@ -5,6 +5,7 @@ import multiprocessing
 import time
 import timeit
 import config
+
 from utils.path import makedir
 
 import ipdb
@@ -37,7 +38,7 @@ def run_4hz_depth(cam_id):
 def run_data_sync():
     time.sleep(t_launch_cam + t_4hz)
     print(f"data sync...")
-    os.system("python dataSync.py")
+    os.system("python dataSync_rgbonly.py")
 
 
 def run_record_data(data_path):
@@ -117,7 +118,6 @@ except KeyboardInterrupt:
     print(f"checkboard_record_name = \"{checkerboard_record_name}\"")
     print("If you no longer want it, please delete it with")
     print(f"rm -rf {data_path}")
-    print("And remember to put away the vr tag before you start recording!")
 
     print("next, run the optimization with")
     bag_filename = os.path.join(data_path, "Checkerboard_CalibData.bag")

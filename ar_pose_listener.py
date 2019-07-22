@@ -21,7 +21,7 @@ def callback(data, args):
     qy = data.markers[0].pose.pose.orientation.y
     qz = data.markers[0].pose.pose.orientation.z
     qw = data.markers[0].pose.pose.orientation.w
-    print("writing vr infor in to", args[1])
+    print("writing ar infor in to", args[1])
     pose_dict = {
         'position': np.asarray([x, y, z]),
         'orientation': np.asarray([qx, qy, qz, qw])
