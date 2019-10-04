@@ -1,0 +1,6 @@
+main.data_file_path = "/Users/macbookpro15/Documents/codes/table_dome_calib/data/all_data_with_intrinsics_depth_mm.pkl"
+main.mode = 'global'
+main.radius_KDTree = 0.1
+main.nearest_neighbors_for_plane = 30
+main.voxel_size = 0.01
+main.segment_plane = True
