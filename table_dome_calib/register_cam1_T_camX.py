@@ -5,6 +5,7 @@ import numpy as np
 import pickle
 import open3d as o3d
 import utils
+import matplotlib.pyplot as plt
 
 def make_pcd(pts):
     pcd = o3d.geometry.PointCloud()
@@ -40,7 +41,7 @@ def get_inlier_pts(pts, clip_radius=5.0):
     return chosen_pts
 
 
-def prepare_data(depths, intrinsics, center=True, clip_radius=None):
+def prepare_data(depths, intrinsics, center=False, clip_radius=None):
     """
     forms the pcd by unprojecting depth image and open3d
     :param depths: all the depth images
@@ -183,47 +184,146 @@ def align(source, target, trans_init=np.eye(4), mode='point2plane',
         return reg_result
 
 
-@gin.configurable
-def main(data_file_path, trans_init=np.eye(4),
-         mode='global', radius_KDTree=0.1, nearest_neighbors_for_plane=30,
-         voxel_size=0.05, segment_plane=False):
+def post_process_extrinsics(exts):
+    num_cams = len(exts)
+    post_processed_exts = list()
+    for i in range(0, num_cams-1):
+        ar_tag_T_camprev = exts[i]
+        ar_tag_T_camnext = exts[i+1]
+        camprev_T_camnext = np.dot(np.linalg.inv(ar_tag_T_camprev), ar_tag_T_camnext)
+        post_processed_exts.append(camprev_T_camnext)
 
-    # main is just for loading the data, this function should return form an array of imgs, depths, exts and ints
-    if not os.path.exists(data_file_path):
-        raise FileNotFoundError('did not find the data file please check the path')
+    # stack and return
+    post_processed_exts = np.stack(post_processed_exts)
+    return post_processed_exts
 
-    # now form the array as mentioned in the comment above
-    with open(data_file_path, 'rb') as f:
-        raw_data = pickle.load(f, encoding='latin1')
 
-    # a hack for the data and for loop to run properly
-    raw_data['cam_0_to_0'] = np.eye(4)
+def ar_tag_data_loader(ar_tag_data_path):
+    # first I will load the depths and the color images from each camera
+    rgbs_depths_base_path = f"{ar_tag_data_path}/rgb_depth_npy"
+    rgb_data_path = f"{rgbs_depths_base_path}/colorData"
+    depth_data_path= f"{rgbs_depths_base_path}/depthData"
 
-    # the next line is the problem of the data, can be easily rectified
-    interesting_cams = [0, 1, 3, 4, 5]
     rgbs, depths, ints, exts = list(), list(), list(), list()
-    for i in interesting_cams:
-        rgb_img = raw_data[f'img{i+1}']
-        depth_img = raw_data[f'depth_img{i+1}']
-        img_int = raw_data[f'cam_{i+1}_intrinsics']
-        img_ext = raw_data[f'cam_0_to_{i}']
-        rgbs.append(rgb_img), depths.append(depth_img)
-        ints.append(img_int), exts.append(img_ext)
 
-    # stack all of them to form the array
+    # now I need to load the intrinsics and the extrinsics
+    # NOTE: The extrinsics are from ar_tag_T_camX form need to covert them to CamX_T_camY form
+    registration_path = f"{ar_tag_data_path}/ar_tag"
+    ints_path = f"{registration_path}/intrinsics.pkl"
+    with open(ints_path, 'rb') as f:
+        int_data = pickle.load(f, encoding='latin1')
+
+    # now I take one image from each of the camera, it should be the same timestep Image
+    num_cams = len(os.listdir(depth_data_path))
+    for i in range(1, num_cams+1):
+        rgb_img_path = f"{rgb_data_path}/Cam{i}/cam_{i}_color_9.npy"
+        rgb_img = np.load(rgb_img_path)
+        rgbs.append(rgb_img)
+
+        plt.imshow(rgb_img)
+        plt.show()
+
+        # load the depth image
+        depth_img_path = f"{depth_data_path}/Cam{i}/cam_{i}_depth_9.npy"
+        depth_img = np.load(depth_img_path)
+        depths.append(depth_img)
+
+        plt.imshow(depth_img)
+        plt.show()
+
+        # load up the intrinsics
+        ints.append(int_data[f'{i}'])
+
+        # load up the extrinsics for this camera
+        ext_path = f'{registration_path}/camera{i}_ar_tag.pkl'
+        with open(ext_path, 'rb') as extf:
+            ext_data = pickle.load(extf, encoding='latin1')
+            exts.append(ext_data)
+
+    # stack'em up and return :)
     rgbs, depths = np.stack(rgbs), np.stack(depths)
     ints, exts = np.stack(ints), np.stack(exts)
 
+    # now I have to post process the exts to get them into form camX_T_camY
+    print('llalalalalala')
+    processed_exts = post_process_extrinsics(exts)
+    return rgbs, depths, ints, exts, processed_exts
+
+
+@gin.configurable
+def main(data_file_path, trans_init=np.eye(4),
+         mode='global', radius_KDTree=0.1, nearest_neighbors_for_plane=30,
+         voxel_size=0.05, segment_plane=False, ar_tag_data_path=None,
+         use_ar_tag=False, reconstruct=False):
+
+    if use_ar_tag:
+        # check if the ar_tag data path is provided
+        if not os.path.exists(ar_tag_data_path):
+            raise FileNotFoundError('should provide a valid directory containing ar_tag data')
+
+        # load the ar_tag data
+        rgbs, depths, ints, exts, processed_exts = ar_tag_data_loader(ar_tag_data_path)
+
+    else:
+        # TODO: remove this superfluous code
+        # main is just for loading the data, this function should return form an array of imgs, depths, exts and ints
+        if not os.path.exists(data_file_path):
+            raise FileNotFoundError('did not find the data file please check the path')
+
+        # now form the array as mentioned in the comment above
+        with open(data_file_path, 'rb') as f:
+            raw_data = pickle.load(f, encoding='latin1')
+
+        # a hack for the data and for loop to run properly
+        raw_data['cam_0_to_0'] = np.eye(4)
+
+        # the next line is the problem of the data, can be easily rectified
+        interesting_cams = [0, 1, 3, 4, 5]
+        rgbs, depths, ints, exts = list(), list(), list(), list()
+        for i in interesting_cams:
+            rgb_img = raw_data[f'img{i+1}']
+            depth_img = raw_data[f'depth_img{i+1}']
+            img_int = raw_data[f'cam_{i+1}_intrinsics']
+            img_ext = raw_data[f'cam_0_to_{i}']
+            rgbs.append(rgb_img), depths.append(depth_img)
+            ints.append(img_int), exts.append(img_ext)
+
+        # stack all of them to form the array
+        rgbs, depths = np.stack(rgbs), np.stack(depths)
+        ints, exts = np.stack(ints), np.stack(exts)
+
     # form all the pcds, actually I only need the depths for now
     # TODO: make the colored pointcloud
-    pcds = prepare_data(depths, ints, center=True, clip_radius=0.4)
+    pcds = prepare_data(depths, ints, center=False, clip_radius=100.0)
+
+    if use_ar_tag:
+        # you have the ar_tag extrinsics and the pcds just rotate all the points and view
+        recon_pcds = list()
+        for i in range(len(pcds)):
+            temp_pts = np.asarray(pcds[i].points)
+            # multiply with the corresponding extrinsics to transform to world space
+            temp_pts = np.c_[temp_pts, np.ones(len(temp_pts))]
+            new_pts = np.dot(np.linalg.inv(exts[i]), temp_pts.T).T
+            new_pts = get_inlier_pts(new_pts[:, :3], clip_radius=0.5)
+            new_pcd = o3d.geometry.PointCloud()
+            new_pcd.points = o3d.utility.Vector3dVector(new_pts)
+            recon_pcds.append(new_pcd)
+
+        # visualize the pcds and move on
+        if reconstruct:
+            visualize(recon_pcds)
 
     # do the registration
-    source_pcd, target_pcd = pcds[2], pcds[3]
+    if use_ar_tag:
+        source_pcd, target_pcd = recon_pcds[1], recon_pcds[2] # THESE ARE IN AR TAG FRAME, NOW I JUST DO THE REFINMENT
+    else:
+        # you have to do clipping here?? TODO: remove this too, this is superfluous
+        source_pcd, target_pcd = pcds[4], pcds[5]
     frame = o3d.geometry.TriangleMesh.create_coordinate_frame(origin=[0, 0, 0], size=0.5)
     visualize([source_pcd, target_pcd, frame])
     reg_result = align(source_pcd, target_pcd, trans_init, mode, radius_KDTree, nearest_neighbors_for_plane, voxel_size,
                        segment_plane=segment_plane)
+    print(reg_result.transformation)
     draw_registration_results(source_pcd, target_pcd, reg_result.transformation)
 
 
