@@ -1,4 +1,4 @@
-main.data_file_path = "/Users/macbookpro15/Documents/codes/table_dome_calib/data/all_data_with_intrinsics_depth_mm.pkl"
+main.data_file_path = "/Users/macbookpro15/Documents/codes/table_dome/table_dome_calib/data/all_data_with_intrinsics_depth_mm.pkl"
 main.mode = 'point2plane'
 main.radius_KDTree = 0.1
 main.nearest_neighbors_for_plane = 30

@@ -47,6 +47,31 @@ def get_inliers(points, clip_radius):
     return inlier_pts
 
 
+# vectorized version of unprojecting using depth image
+def vectorized_unproject_using_depth(depth, intrinsics, depth_scale):
+    fx, fy, cx, cy = parse_intrinsics(intrinsics)
+    # first scale the entire depth image
+    depth /= depth_scale
+
+    # form the mesh grid
+    xv, yv = np.meshgrid(np.arange(depth.shape[1], dtype=float), np.arange(depth.shape[0], dtype=float))
+
+    xv -= cx
+    xv /= fx
+    xv *= depth
+    yv -= cy
+    yv /= fy
+    yv *= depth
+    points = np.c_[xv.flatten(), yv.flatten(), depth.flatten()]
+
+    if rgb is not None:
+        # flatten it and add to the points
+        rgb = rgb.reshape(-1, 3)
+
+    points = np.concatenate((points, rgb), axis=1)
+    return points
+
+
 def _unproject_using_depth(depth_img, intrinsics_mat, depth_scale=1.0):
     points = list()
     fx, fy, cx, cy = parse_intrinsics(intrinsics_mat)

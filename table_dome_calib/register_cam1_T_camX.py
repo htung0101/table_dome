@@ -228,7 +228,7 @@ def ar_tag_data_loader(ar_tag_data_path):
         depth_img = np.load(depth_img_path)
         depths.append(depth_img)
 
-        plt.imshow(depth_img)
+        plt.imshow(np.clip(depth_img, -0.5, 0.5))
         plt.show()
 
         # load up the intrinsics
@@ -294,7 +294,8 @@ def main(data_file_path, trans_init=np.eye(4),
 
     # form all the pcds, actually I only need the depths for now
     # TODO: make the colored pointcloud
-    pcds = prepare_data(depths, ints, center=False, clip_radius=100.0)
+    pcds = prepare_data(depths, ints, center=False if use_ar_tag else True,
+                        clip_radius=100.0 if use_ar_tag else 0.5)
 
     if use_ar_tag:
         # you have the ar_tag extrinsics and the pcds just rotate all the points and view
@@ -315,10 +316,10 @@ def main(data_file_path, trans_init=np.eye(4),
 
     # do the registration
     if use_ar_tag:
-        source_pcd, target_pcd = recon_pcds[1], recon_pcds[2] # THESE ARE IN AR TAG FRAME, NOW I JUST DO THE REFINMENT
+        source_pcd, target_pcd = recon_pcds[3], recon_pcds[4] # THESE ARE IN AR TAG FRAME, NOW I JUST DO THE REFINMENT
     else:
         # you have to do clipping here?? TODO: remove this too, this is superfluous
-        source_pcd, target_pcd = pcds[4], pcds[5]
+        source_pcd, target_pcd = pcds[2], pcds[3]
     frame = o3d.geometry.TriangleMesh.create_coordinate_frame(origin=[0, 0, 0], size=0.5)
     visualize([source_pcd, target_pcd, frame])
     reg_result = align(source_pcd, target_pcd, trans_init, mode, radius_KDTree, nearest_neighbors_for_plane, voxel_size,
