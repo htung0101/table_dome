@@ -6,4 +6,5 @@ main.voxel_size = 0.01
 main.segment_plane = False
 main.ar_tag_data_path = "data/TableDome_y2019_m10_h21_m1_s48_ag"
 main.use_ar_tag = True
-main.reconstruct = False
+main.vis = True
+main.clip_radius = 1.

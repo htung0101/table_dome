@@ -9,7 +9,11 @@ import matplotlib.pyplot as plt
 
 def make_pcd(pts):
     pcd = o3d.geometry.PointCloud()
-    pcd.points = o3d.utility.Vector3dVector(pts)
+    pcd.points = o3d.utility.Vector3dVector(pts[:, :3])
+    # if the dim is greater than 3 I expect the color
+    if pts.shape[1] == 6:
+        pcd.colors = o3d.utility.Vector3dVector(pts[:, 3:] / 255.\
+            if pts.max() > 1. else pts[:, 3:])
     return pcd
 
 
@@ -34,30 +38,54 @@ def get_inlier_pts(pts, clip_radius=5.0):
     :param clip_radius: a float
     :return: numpy.ndarray of form (Ninliers, 3)
     """
+    # do the mean centering of the pts first, deepcopy for this
+    filter_pts = copy.deepcopy(pts[:, :3])
+    mean_pts = filter_pts.mean(axis=0)
+    assert mean_pts.shape == (3,), "wrong mean computation"
+    filter_pts -= mean_pts
+
     sq_radius = clip_radius ** 2
-    pts_norm_squared = np.linalg.norm(pts, axis=1)
+    pts_norm_squared = np.linalg.norm(filter_pts, axis=1)
     idxs = (pts_norm_squared - sq_radius) <= 0.0
     chosen_pts = pts[idxs]
     return chosen_pts
 
 
-def prepare_data(depths, intrinsics, center=False, clip_radius=None):
+def prepare_data(depths, intrinsics, rgbs, center=False, clip_radius=None, vis=False,
+    save_data="/Users/macbookpro15/Documents/codes/table_dome/table_dome_calib/images"):
     """
     forms the pcd by unprojecting depth image and open3d
     :param depths: all the depth images
     :param intrinsics: all the intrinsics
+    :param rgbs: all the color images
+    :param center: if True I subtract the mean point from the unproject points
+    :parm clip_radius: if specified I only take points which lie with the sphere
+    :param vis: if specified I visualize all the intermediate pointclouds formed
     :return: returns pcds for all the cameras
     """
+    if save_data:
+        if not os.path.exists(save_data):
+            os.makedirs(save_data)
     num_images = len(depths)
     pcds = list()
     for i in range(num_images):
-        pts = utils._unproject_using_depth(depths[i], intrinsics[i], depth_scale=1000.0)
+        if save_data:
+            plt.imshow(np.clip(depths[i], 0, 600))
+            plt.savefig(f'{save_data}/depth{i}.jpg')
+            plt.imshow(rgbs[i])
+            plt.savefig(f'{save_data}/rgb{i}.jpg')
+        pts = utils.vectorized_unproject_using_depth(depths[i], intrinsics[i],
+            rgbs[i], depth_scale=1000.0)
         if center:
             pts_mean = pts.mean(axis=0)
             pts -= pts_mean
-        if clip_radius:
+        if clip_radius is not None:
             pts = get_inlier_pts(pts, clip_radius=clip_radius)
         pcd = make_pcd(pts)
+        if vis:
+            # make a coordinate frame
+            frame = o3d.geometry.TriangleMesh.create_coordinate_frame(size=1., origin=[0., 0., 0.])
+            visualize([pcd, frame])
         pcds.append(pcd)
     return pcds
 
@@ -253,9 +281,10 @@ def ar_tag_data_loader(ar_tag_data_path):
 @gin.configurable
 def main(data_file_path, trans_init=np.eye(4),
          mode='global', radius_KDTree=0.1, nearest_neighbors_for_plane=30,
-         voxel_size=0.05, segment_plane=False, ar_tag_data_path=None,
-         use_ar_tag=False, reconstruct=False):
+         voxel_size=0.05, clip_radius=1., segment_plane=False, ar_tag_data_path=None,
+         use_ar_tag=False, vis=False):
 
+    ### ... Loading ar_tag data ... ###
     if use_ar_tag:
         # check if the ar_tag data path is provided
         if not os.path.exists(ar_tag_data_path):
@@ -264,6 +293,7 @@ def main(data_file_path, trans_init=np.eye(4),
         # load the ar_tag data
         rgbs, depths, ints, exts, processed_exts = ar_tag_data_loader(ar_tag_data_path)
 
+    #### ... some other data loader TODO: Remove this after checking nicely ...####
     else:
         # TODO: remove this superfluous code
         # main is just for loading the data, this function should return form an array of imgs, depths, exts and ints
@@ -293,26 +323,30 @@ def main(data_file_path, trans_init=np.eye(4),
         ints, exts = np.stack(ints), np.stack(exts)
 
     # form all the pcds, actually I only need the depths for now
-    # TODO: make the colored pointcloud
-    pcds = prepare_data(depths, ints, center=False if use_ar_tag else True,
-                        clip_radius=100.0 if use_ar_tag else 0.5)
+    pcds = prepare_data(depths, ints, rgbs, center=False if use_ar_tag else True,
+                        clip_radius=clip_radius if use_ar_tag else 0.5, vis=False)
 
     if use_ar_tag:
         # you have the ar_tag extrinsics and the pcds just rotate all the points and view
         recon_pcds = list()
         for i in range(len(pcds)):
             temp_pts = np.asarray(pcds[i].points)
+            temp_colors = copy.deepcopy(np.asarray(pcds[i].colors))
+
             # multiply with the corresponding extrinsics to transform to world space
             temp_pts = np.c_[temp_pts, np.ones(len(temp_pts))]
             new_pts = np.dot(np.linalg.inv(exts[i]), temp_pts.T).T
-            new_pts = get_inlier_pts(new_pts[:, :3], clip_radius=0.5)
-            new_pcd = o3d.geometry.PointCloud()
-            new_pcd.points = o3d.utility.Vector3dVector(new_pts)
+
+            # now you have the points in world frame, form the colored pointcloud here
+            new_pts = np.c_[new_pts[:, :3], temp_colors]
+            new_pts = get_inlier_pts(new_pts, clip_radius=0.5)
+
+            new_pcd = make_pcd(new_pts)
             recon_pcds.append(new_pcd)
 
         # visualize the pcds and move on
-        if reconstruct:
-            visualize(recon_pcds)
+        if vis:
+            visualize(recon_pcds[2:])
 
     # do the registration
     if use_ar_tag:
