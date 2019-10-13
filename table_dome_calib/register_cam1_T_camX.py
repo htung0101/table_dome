@@ -6,6 +6,7 @@ import pickle
 import open3d as o3d
 import utils
 import matplotlib.pyplot as plt
+from IPython import embed
 
 def make_pcd(pts):
     pcd = o3d.geometry.PointCloud()
@@ -277,89 +278,103 @@ def ar_tag_data_loader(ar_tag_data_path):
     processed_exts = post_process_extrinsics(exts)
     return rgbs, depths, ints, exts, processed_exts
 
+@gin.configurable
+def run_color_icp(source, target, voxel_radius=[0.04, 0.02, 0.01],
+    max_iter=[50, 30, 14]):
+    voxel_radius = [0.04, 0.02, 0.01]
+    max_iter = [50, 30, 14]
+    current_transformation = np.identity(4)
+    print("1. Colored point cloud registration")
+    for scale in range(3):
+        iter = max_iter[scale]
+        radius = voxel_radius[scale]
+        print([iter, radius, scale])
+
+        print("1-1. Downsample with a voxel size %.2f" % radius)
+        source_down = source.voxel_down_sample(radius)
+        target_down = target.voxel_down_sample(radius)
+
+        print("1-2. Estimate normal.")
+        source_down.estimate_normals(
+            o3d.geometry.KDTreeSearchParamHybrid(radius=radius * 2, max_nn=30))
+        target_down.estimate_normals(
+            o3d.geometry.KDTreeSearchParamHybrid(radius=radius * 2, max_nn=30))
+
+        print("3-3. Applying colored point cloud registration")
+        result_icp = o3d.registration.registration_colored_icp(
+            source_down, target_down, radius, current_transformation,
+            o3d.registration.ICPConvergenceCriteria(relative_fitness=1e-6,
+                                                    relative_rmse=1e-6,
+                                                    max_iteration=iter))
+        current_transformation = result_icp.transformation
+        print(result_icp)
+    draw_registration_result_original_color(source, target,
+                                            result_icp.transformation)
+    return result_icp.transformation
+
 
 @gin.configurable
-def main(data_file_path, trans_init=np.eye(4),
+def main(trans_init=np.eye(4),
          mode='global', radius_KDTree=0.1, nearest_neighbors_for_plane=30,
          voxel_size=0.05, clip_radius=1., segment_plane=False, ar_tag_data_path=None,
          use_ar_tag=False, vis=False):
 
     ### ... Loading ar_tag data ... ###
-    if use_ar_tag:
-        # check if the ar_tag data path is provided
-        if not os.path.exists(ar_tag_data_path):
-            raise FileNotFoundError('should provide a valid directory containing ar_tag data')
+    # check if the ar_tag data path is provided
+    if not os.path.exists(ar_tag_data_path):
+        raise FileNotFoundError('should provide a valid directory containing ar_tag data')
 
-        # load the ar_tag data
-        rgbs, depths, ints, exts, processed_exts = ar_tag_data_loader(ar_tag_data_path)
-
-    #### ... some other data loader TODO: Remove this after checking nicely ...####
-    else:
-        # TODO: remove this superfluous code
-        # main is just for loading the data, this function should return form an array of imgs, depths, exts and ints
-        if not os.path.exists(data_file_path):
-            raise FileNotFoundError('did not find the data file please check the path')
-
-        # now form the array as mentioned in the comment above
-        with open(data_file_path, 'rb') as f:
-            raw_data = pickle.load(f, encoding='latin1')
-
-        # a hack for the data and for loop to run properly
-        raw_data['cam_0_to_0'] = np.eye(4)
-
-        # the next line is the problem of the data, can be easily rectified
-        interesting_cams = [0, 1, 3, 4, 5]
-        rgbs, depths, ints, exts = list(), list(), list(), list()
-        for i in interesting_cams:
-            rgb_img = raw_data[f'img{i+1}']
-            depth_img = raw_data[f'depth_img{i+1}']
-            img_int = raw_data[f'cam_{i+1}_intrinsics']
-            img_ext = raw_data[f'cam_0_to_{i}']
-            rgbs.append(rgb_img), depths.append(depth_img)
-            ints.append(img_int), exts.append(img_ext)
-
-        # stack all of them to form the array
-        rgbs, depths = np.stack(rgbs), np.stack(depths)
-        ints, exts = np.stack(ints), np.stack(exts)
+    # load the ar_tag data
+    rgbs, depths, ints, exts, processed_exts = ar_tag_data_loader(ar_tag_data_path)
 
     # form all the pcds, actually I only need the depths for now
     pcds = prepare_data(depths, ints, rgbs, center=False if use_ar_tag else True,
                         clip_radius=clip_radius if use_ar_tag else 0.5, vis=False)
 
-    if use_ar_tag:
-        # you have the ar_tag extrinsics and the pcds just rotate all the points and view
-        recon_pcds = list()
-        for i in range(len(pcds)):
-            temp_pts = np.asarray(pcds[i].points)
-            temp_colors = copy.deepcopy(np.asarray(pcds[i].colors))
+    if vis:
+        print('view all pcds in camera frame')
+        visualize(pcds)
 
-            # multiply with the corresponding extrinsics to transform to world space
-            temp_pts = np.c_[temp_pts, np.ones(len(temp_pts))]
-            new_pts = np.dot(np.linalg.inv(exts[i]), temp_pts.T).T
+    # you have the ar_tag extrinsics and the pcds just rotate all the points and view
+    recon_pcds = list()
+    for i in range(len(pcds)):
+        temp_pts = np.asarray(pcds[i].points)
+        temp_colors = copy.deepcopy(np.asarray(pcds[i].colors))
 
-            # now you have the points in world frame, form the colored pointcloud here
-            new_pts = np.c_[new_pts[:, :3], temp_colors]
-            new_pts = get_inlier_pts(new_pts, clip_radius=0.5)
+        # multiply with the corresponding extrinsics to transform to world space
+        temp_pts = np.c_[temp_pts, np.ones(len(temp_pts))]
+        new_pts = np.dot(np.linalg.inv(exts[i]), temp_pts.T).T
 
-            new_pcd = make_pcd(new_pts)
-            recon_pcds.append(new_pcd)
+        # now you have the points in world frame, form the colored pointcloud here
+        new_pts = np.c_[new_pts[:, :3], temp_colors]
+        new_pts = get_inlier_pts(new_pts, clip_radius=clip_radius)
 
-        # visualize the pcds and move on
-        if vis:
-            visualize(recon_pcds[2:])
+        new_pcd = make_pcd(new_pts)
+        recon_pcds.append(new_pcd)
 
-    # do the registration
-    if use_ar_tag:
-        source_pcd, target_pcd = recon_pcds[3], recon_pcds[4] # THESE ARE IN AR TAG FRAME, NOW I JUST DO THE REFINMENT
-    else:
-        # you have to do clipping here?? TODO: remove this too, this is superfluous
-        source_pcd, target_pcd = pcds[2], pcds[3]
-    frame = o3d.geometry.TriangleMesh.create_coordinate_frame(origin=[0, 0, 0], size=0.5)
-    visualize([source_pcd, target_pcd, frame])
-    reg_result = align(source_pcd, target_pcd, trans_init, mode, radius_KDTree, nearest_neighbors_for_plane, voxel_size,
-                       segment_plane=segment_plane)
-    print(reg_result.transformation)
-    draw_registration_results(source_pcd, target_pcd, reg_result.transformation)
+    # visualize the pcds and move on
+    if vis:
+        print('view all pcds in ar_tag frame')
+        visualize(recon_pcds[2:])
+
+    # Here we have data from all the images in common ar_tag frame, save it
+    # create a new directory in the ar_tag_data_path, pcds_in_ar_tag_frame
+    recon_pcds_save_path = f"{ar_tag_data_path}/pcds_in_ar_tag_frame"
+    if not os.path.exists(recon_pcds_save_path):
+        os.makedirs(recon_pcds_save_path)
+
+    # save all the pcds
+    for i in range(len(recon_pcds)):
+        save_file_path = f'{recon_pcds_save_path}/pcd_{i}.pkl'
+        with open(save_file_path, 'wb') as f:
+            points = np.asarray(recon_pcds[i].points)
+            colors = np.asarray(recon_pcds[i].colors)
+            save_dict = {
+                'points': points,
+                'colors': colors
+            }
+            pickle.dump(save_dict, f)
+        f.close()
 
 
 if __name__ == '__main__':
