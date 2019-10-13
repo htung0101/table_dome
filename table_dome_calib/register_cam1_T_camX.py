@@ -213,20 +213,6 @@ def align(source, target, trans_init=np.eye(4), mode='point2plane',
         return reg_result
 
 
-def post_process_extrinsics(exts):
-    num_cams = len(exts)
-    post_processed_exts = list()
-    for i in range(0, num_cams-1):
-        ar_tag_T_camprev = exts[i]
-        ar_tag_T_camnext = exts[i+1]
-        camprev_T_camnext = np.dot(np.linalg.inv(ar_tag_T_camprev), ar_tag_T_camnext)
-        post_processed_exts.append(camprev_T_camnext)
-
-    # stack and return
-    post_processed_exts = np.stack(post_processed_exts)
-    return post_processed_exts
-
-
 def ar_tag_data_loader(ar_tag_data_path):
     # first I will load the depths and the color images from each camera
     rgbs_depths_base_path = f"{ar_tag_data_path}/rgb_depth_npy"
@@ -274,7 +260,6 @@ def ar_tag_data_loader(ar_tag_data_path):
     ints, exts = np.stack(ints), np.stack(exts)
 
     # now I have to post process the exts to get them into form camX_T_camY
-    print('llalalalalala')
     processed_exts = post_process_extrinsics(exts)
     return rgbs, depths, ints, exts, processed_exts
 
