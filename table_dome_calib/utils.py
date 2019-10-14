@@ -49,7 +49,7 @@ def get_inliers(points, clip_radius):
 
 # vectorized version of unprojecting using depth image
 def vectorized_unproject_using_depth(depth, intrinsics, rgb, depth_scale):
-    depth = depth.astype(np.float64)
+    depth = depth.astype(np.float32)
     fx, fy, cx, cy = parse_intrinsics(intrinsics)
     # first scale the entire depth image
     depth /= depth_scale
