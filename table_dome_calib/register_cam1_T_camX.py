@@ -14,7 +14,7 @@ def make_pcd(pts):
     # if the dim is greater than 3 I expect the color
     if pts.shape[1] == 6:
         pcd.colors = o3d.utility.Vector3dVector(pts[:, 3:] / 255.\
-            if pts.max() > 1. else pts[:, 3:])
+            if pts[:, 3:].max() > 1. else pts[:, 3:])
     return pcd
 
 
@@ -259,15 +259,20 @@ def ar_tag_data_loader(ar_tag_data_path):
     rgbs, depths = np.stack(rgbs), np.stack(depths)
     ints, exts = np.stack(ints), np.stack(exts)
 
-    # now I have to post process the exts to get them into form camX_T_camY
-    processed_exts = post_process_extrinsics(exts)
-    return rgbs, depths, ints, exts, processed_exts
+    return rgbs, depths, ints, exts
+
+
+def draw_registration_result_original_color(source, target, transformation):
+    source_temp = copy.deepcopy(source)
+    source_temp.transform(transformation)
+    o3d.visualization.draw_geometries([source_temp, target])
+
 
 @gin.configurable
 def run_color_icp(source, target, voxel_radius=[0.04, 0.02, 0.01],
-    max_iter=[50, 30, 14]):
-    voxel_radius = [0.04, 0.02, 0.01]
-    max_iter = [50, 30, 14]
+    max_iter=[50, 30, 14], vis=False):
+    print(voxel_radius)
+    print(max_iter)
     current_transformation = np.identity(4)
     print("1. Colored point cloud registration")
     for scale in range(3):
@@ -293,7 +298,8 @@ def run_color_icp(source, target, voxel_radius=[0.04, 0.02, 0.01],
                                                     max_iteration=iter))
         current_transformation = result_icp.transformation
         print(result_icp)
-    draw_registration_result_original_color(source, target,
+    if vis:
+        draw_registration_result_original_color(source, target,
                                             result_icp.transformation)
     return result_icp.transformation
 
@@ -310,7 +316,7 @@ def main(trans_init=np.eye(4),
         raise FileNotFoundError('should provide a valid directory containing ar_tag data')
 
     # load the ar_tag data
-    rgbs, depths, ints, exts, processed_exts = ar_tag_data_loader(ar_tag_data_path)
+    rgbs, depths, ints, exts = ar_tag_data_loader(ar_tag_data_path)
 
     # form all the pcds, actually I only need the depths for now
     pcds = prepare_data(depths, ints, rgbs, center=False if use_ar_tag else True,
@@ -332,7 +338,6 @@ def main(trans_init=np.eye(4),
 
         # now you have the points in world frame, form the colored pointcloud here
         new_pts = np.c_[new_pts[:, :3], temp_colors]
-        new_pts = get_inlier_pts(new_pts, clip_radius=clip_radius)
 
         new_pcd = make_pcd(new_pts)
         recon_pcds.append(new_pcd)
@@ -340,7 +345,8 @@ def main(trans_init=np.eye(4),
     # visualize the pcds and move on
     if vis:
         print('view all pcds in ar_tag frame')
-        visualize(recon_pcds[2:])
+        for i in range(len(recon_pcds)):
+            visualize([recon_pcds[i]])
 
     # Here we have data from all the images in common ar_tag frame, save it
     # create a new directory in the ar_tag_data_path, pcds_in_ar_tag_frame

@@ -4,7 +4,7 @@ import register_cam1_T_camX
 import numpy as np
 import open3d as o3d
 
-def subtract(dict_a, dict_b):
+def subtract(dict_a, dict_b, vis=True):
 	pts_a = dict_a['points']
 	pts_b = dict_b['points']
 
@@ -23,7 +23,54 @@ def subtract(dict_a, dict_b):
 	new_pcd = o3d.geometry.PointCloud()
 	new_pcd.points = o3d.utility.Vector3dVector(clipped_pts[:, :3])
 	new_pcd.colors = o3d.utility.Vector3dVector(clipped_pts[:, 3:])
+	if vis:
+		o3d.visualization.draw_geometries([new_pcd])
 	return new_pcd
+
+
+def get_alignment_to_cam1(pcds):
+	"""
+		pcds: list of pcds for which to compute the transformation
+		returns: dict with keys cam1_T_camX
+	"""
+	transformations = dict()
+	t = np.eye(4)
+	transformations['cam1_T_cam1'] = t
+	for i in range(1, len(pcds)-1):
+		target = pcds[i]
+		source = pcds[i+1]
+
+		### ... Trying the first one ... ###
+		camPrev_T_camNext = register_cam1_T_camX.run_color_icp(source, target, vis=False)
+		t = np.dot(t, camPrev_T_camNext)
+		transformations[f'cam1_T_cam{i+1}'] = t
+	return transformations
+
+
+def transform_all_to_cam1(pcds, transformations):
+	"""Transforms all pcds to camera1 using the transformations computed using colored ICP
+	prameters:
+	------------
+		pcds: all_object_pcds files
+		transformations: dict containing the transforms
+	returns:
+	------------
+		list: all_pcds_in_cam1_frame
+	"""
+	all_pcds_in_cam1 = []
+	for i in range(1, len(pcds)):
+		temp_pts = np.asarray(pcds[i].points)
+		temp_colors = np.asarray(pcds[i].colors)
+
+		# transform using the matrix
+		temp_pts = np.c_[temp_pts, np.ones(len(temp_pts))]
+		new_pts = np.dot(transformations[f'cam1_T_cam{i}'], temp_pts.T).T
+		new_pts = np.c_[new_pts[:, :3], temp_colors]
+
+		new_pcd = register_cam1_T_camX.make_pcd(new_pts)
+		all_pcds_in_cam1.append(new_pcd)
+	return all_pcds_in_cam1
+
 
 if __name__ == '__main__':
 	base_pcd_a_dir = 'data/artag_only_TableDome_y2019_m10_h17_m52_s56'  # object data
@@ -51,11 +98,19 @@ if __name__ == '__main__':
 			dict_b = pickle.load(f)
 		f.close()
 
-		new_pcd = subtract(dict_a, dict_b)
+		new_pcd = subtract(dict_a, dict_b, vis=False)
 		only_object_pcds.append(new_pcd)
 
-	o3d.visualization.draw_geometries([only_object_pcds[1], only_object_pcds[4], only_object_pcds[5]])
+	o3d.visualization.draw_geometries(only_object_pcds[1:])
 
-	care_about_cams = [1, 4, 5]  # Need to figure out what is wrong with camera 0, 2, 3 
-	# now I will tightly align these three point clouds using coloredICP
-	cam1_T_cam4 = register_cam1_T_camX.run_color_icp(only_object_pcds[5], only_object_pcds[1])
+	# now i will get tight alignment with camera1 of every other camera
+	transformations = get_alignment_to_cam1(only_object_pcds)
+	assert len(transformations.keys()) == 5, "some of the transformations are missing"
+
+	# I now have all the relative transformations, need to apply them and see the scene
+	all_pcds_in_cam1 = transform_all_to_cam1(only_object_pcds, transformations)
+	assert len(all_pcds_in_cam1) == 5, "some of the pcds are missing"
+
+	o3d.visualization.draw_geometries(all_pcds_in_cam1)
+
+	import ipdb; ipdb.set_trace()
