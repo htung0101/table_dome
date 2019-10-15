@@ -2,8 +2,12 @@ main.mode = 'point2plane'
 main.radius_KDTree = 0.1
 main.nearest_neighbors_for_plane = 30
 main.voxel_size = 0.01
-main.segment_plane = False
-main.ar_tag_data_path = "data/artag_only_TableDome_y2019_m10_h16_m58_s11"
+main.ar_tag_data_path = "data/artag_only_TableDome_y2019_m10_h13_m3_s3"
 main.use_ar_tag = True
 main.vis = True
 main.clip_radius = None
+
+subtract_main.base_pcd_a_dir = "data/artag_only_TableDome_y2019_m10_h13_m3_s3"
+subtract_main.base_pcd_b_dir = "data/artag_only_TableDome_y2019_m10_h16_m58_s11"
+subtract_main.scene_save_base_dir = "data/truck_scene"
+subtract_main.do_icp = False

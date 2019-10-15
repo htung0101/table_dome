@@ -122,8 +122,7 @@ def runICP(source, target, transform_init, threshold, mode='point2plane'):
 
 
 def align(source, target, trans_init=np.eye(4), mode='point2plane',
-          radius_KDTree=0.1, nearest_neighbors_for_plane=30, voxel_size=0.05,
-          segment_plane=True):
+          radius_KDTree=0.1, nearest_neighbors_for_plane=30, voxel_size=0.05):
     """
     transforms point cloud using different methods
     :param source: source pointcloud
@@ -145,50 +144,7 @@ def align(source, target, trans_init=np.eye(4), mode='point2plane',
     target.estimate_normals(search_param=o3d.geometry.KDTreeSearchParamHybrid(
         radius=radius_KDTree, max_nn=nearest_neighbors_for_plane
     ))
-
-    if segment_plane:
-        # now I want to segment out the plane
-        new_source = np.asarray(source.points)
-        new_target = np.asarray(target.points)
-
-        # next compute the covariance matrix
-        cov_source = np.dot(new_source.T, new_source)
-        cov_target = np.dot(new_target.T, new_target)
-
-        # do the eigen decompostions
-        source_w, source_v = np.linalg.eigh(cov_source)
-        target_w, target_v = np.linalg.eigh(cov_target)
-
-        # here I do have the equation of the normal, I just have to find one point which lies on the plane
-        normal_source = source_v[:, 0]
-        normal_target = target_v[:, 0]
-
-        # source plane and target plane
-        source_x = new_source[0, :]
-        source_vectors = new_source[1:, :] - source_x
-        dots = np.dot(source_vectors, normal_source)
-        # TODO: the next line is specific for the dataset
-        chosen_idx_source = dots <= 0.
-        chosen_idx_source = np.concatenate([[False], chosen_idx_source])
-        chosen_source_points = new_source[chosen_idx_source]
-
-        target_x = new_target[0, :]
-        target_vectors = new_target[1:, :] - target_x
-        dots = np.dot(target_vectors, normal_target)
-        # TODO: again the next line is specific to the dataset
-        chosen_idx_targets = dots <= 0.
-        chosen_idx_targets = np.concatenate([[False], chosen_idx_targets])
-        chosen_target_points = new_target[chosen_idx_targets]
-
-        new_source_pcd = o3d.geometry.PointCloud()
-        new_source_pcd.points = o3d.utility.Vector3dVector(chosen_source_points)
-
-        new_target_pcd = o3d.geometry.PointCloud()
-        new_target_pcd.points = o3d.utility.Vector3dVector(chosen_target_points)
-
-        visualize([new_source_pcd, new_target_pcd])
-
-
+    
     if mode == "global":
         # run the global registration first
         # compute the features first
@@ -307,7 +263,7 @@ def run_color_icp(source, target, voxel_radius=[0.04, 0.02, 0.01],
 @gin.configurable
 def main(trans_init=np.eye(4),
          mode='global', radius_KDTree=0.1, nearest_neighbors_for_plane=30,
-         voxel_size=0.05, clip_radius=1., segment_plane=False, ar_tag_data_path=None,
+         voxel_size=0.05, clip_radius=1., ar_tag_data_path=None,
          use_ar_tag=False, vis=False):
 
     ### ... Loading ar_tag data ... ###

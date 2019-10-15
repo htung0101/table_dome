@@ -1,4 +1,5 @@
 import os
+import gin
 import pickle
 import register_cam1_T_camX
 import numpy as np
@@ -78,7 +79,7 @@ def run_final_clipping(pcds):
     new_pcds = list()
     for i in range(len(pcds)):
         pts = np.c_[np.asarray(pcds[i].points), np.asarray(pcds[i].colors)]
-        clipped_pts = register_cam1_T_camX.get_inlier_pts(pts, clip_radius=0.4)
+        clipped_pts = register_cam1_T_camX.get_inlier_pts(pts, clip_radius=0.38)
         clipped_pcd = register_cam1_T_camX.make_pcd(clipped_pts)
         new_pcds.append(clipped_pcd)
     return new_pcds
@@ -86,17 +87,17 @@ def run_final_clipping(pcds):
 
 def merge_pcds(pcds):
     pts = [np.asarray(pcd.points) for pcd in pcds]
+    colors = [np.asarray(pcd.colors) for pcd in pcds]
     assert len(pts) == 5, "these is the number of supplied pcd, it should match"
     combined_pts = np.concatenate(pts, axis=0)
+    combined_colors = np.concatenate(colors, axis=0)
     assert combined_pts.shape[1] == 3, "concatenation is wrong"
-    return combined_pts
+    return combined_pts, combined_colors
 
 
-def get_bounding_box_coordinates(pcds):
+def get_bounding_box_coordinates(merged_pts):
     """Merges all the pcds computes the bbox and returns it
     """
-    merged_pts = merge_pcds(pcds)
-
     xmax, xmin = np.max(merged_pts[:, 0], axis=0),\
         np.min(merged_pts[:, 0], axis=0)
 
@@ -109,9 +110,22 @@ def get_bounding_box_coordinates(pcds):
     return np.asarray([[xmin, xmax], [ymin, ymax], [zmin, zmax]])
 
 
-if __name__ == '__main__':
-    base_pcd_a_dir = 'data/artag_only_TableDome_y2019_m10_h17_m52_s56'  # object data
-    base_pcd_b_dir = 'data/artag_only_TableDome_y2019_m10_h16_m58_s11'  # empty table
+def form_eight_points_of_bbox(bbox_coords):
+    xmin, ymin, zmin = bbox_coords[:, 0]
+    xmax, ymax, zmax = bbox_coords[:, 1]
+    eight_points = [[xmin, ymin, zmin], [xmax, ymin, zmin], [xmin, ymax, zmin], [xmax, ymax, zmin],\
+        [xmin, ymin, zmax], [xmax, ymin, zmax], [xmin, ymax, zmax], [xmax, ymax, zmax]]
+    return eight_points
+
+
+@gin.configurable
+def subtract_main(base_pcd_a_dir, base_pcd_b_dir, scene_save_base_dir, do_icp=False):
+    print('base_pcd_a_dir=', base_pcd_a_dir)
+    print('base_pcd_b_dir=', base_pcd_b_dir)
+    print('scene_save_base_dir=', scene_save_base_dir)
+    print('do_icp=', do_icp)
+    if not os.path.exists(scene_save_base_dir):
+        os.makedirs(scene_save_base_dir)
 
     pts_and_color_dir_a = f'{base_pcd_a_dir}/pcds_in_ar_tag_frame'
     pts_and_color_dir_b = f'{base_pcd_b_dir}/pcds_in_ar_tag_frame'
@@ -141,29 +155,32 @@ if __name__ == '__main__':
     o3d.visualization.draw_geometries(only_object_pcds[1:])
 
     # now i will get tight alignment with camera1 of every other camera
-    transformations = get_alignment_to_cam1(only_object_pcds)
-    assert len(transformations.keys()) == 5, "some of the transformations are missing"
+    if do_icp:
+        transformations = get_alignment_to_cam1(only_object_pcds)
+        assert len(transformations.keys()) == 5, "some of the transformations are missing"
 
-    # I now have all the relative transformations, need to apply them and see the scene
-    all_pcds_in_cam1 = transform_all_to_cam1(only_object_pcds, transformations)
-    assert len(all_pcds_in_cam1) == 5, "some of the pcds are missing"
+        # I now have all the relative transformations, need to apply them and see the scene
+        all_pcds_in_cam1 = transform_all_to_cam1(only_object_pcds, transformations)
+        assert len(all_pcds_in_cam1) == 5, "some of the pcds are missing"
 
-    o3d.visualization.draw_geometries(all_pcds_in_cam1)
+        o3d.visualization.draw_geometries(all_pcds_in_cam1)
 
-    # NAIVE THING: I will run the clipping again to remove stuff
-    clipped_pcds = run_final_clipping(all_pcds_in_cam1)
+    # NAIVE THING: I will run the clipping again to remove stuff, TODO: try out connected components here
+    clipped_pcds = run_final_clipping(all_pcds_in_cam1 if do_icp else only_object_pcds[1:])
     assert len(clipped_pcds) == 5, "some pcds are missing after clipping"
+    print('visualize the clipped pcds, there should not be any outliers here')
     o3d.visualization.draw_geometries(clipped_pcds)
 
-    bbox_coords = get_bounding_box_coordinates(clipped_pcds)
+    merged_pts, merged_colors = merge_pcds(clipped_pcds)
+    bbox_coords = get_bounding_box_coordinates(merged_pts)
 
-    # now I will draw the lineset corresponding to this points and done
-    xmin, ymin, zmin = bbox_coords[:, 0]
-    xmax, ymax, zmax = bbox_coords[:, 1]
+    # form the merged_pcd for visualization
+    combined_pcd = o3d.geometry.PointCloud()
+    combined_pcd.points = o3d.utility.Vector3dVector(merged_pts)
+    combined_pcd.colors = o3d.utility.Vector3dVector(merged_colors)
 
     # points for linesets
-    points = [[xmin, ymin, zmin], [xmax, ymin, zmin], [xmin, ymax, zmin], [xmax, ymax, zmin],\
-        [xmin, ymin, zmax], [xmax, ymin, zmax], [xmin, ymax, zmax], [xmax, ymax, zmax]]
+    points = form_eight_points_of_bbox(bbox_coords)
 
     lines = [[0, 1], [0, 2], [1, 3], [2, 3], [4, 5], [4, 6], [5, 7], [6, 7],
              [0, 4], [1, 5], [2, 6], [3, 7]]
@@ -173,8 +190,22 @@ if __name__ == '__main__':
     line_set.points = o3d.utility.Vector3dVector(points)
     line_set.lines = o3d.utility.Vector2iVector(lines)
     line_set.colors = o3d.utility.Vector3dVector(colors)
-    clipped_pcds.append(line_set)
 
-    o3d.visualization.draw_geometries(clipped_pcds)
+    print('visualize the scene with the bounding box')
+    o3d.visualization.draw_geometries([combined_pcd, line_set])
 
-    import ipdb; ipdb.set_trace()
+    # save this scene in the good place
+    num_scenes = len(os.listdir(scene_save_base_dir))
+    scene_name = f'{scene_save_base_dir}/{base_pcd_a_dir[5:]}.npy'
+    save_dict = {
+        'pts': merged_pts,
+        'color': merged_colors,
+        'bbox' : bbox_coords
+    }
+    np.save(scene_name, save_dict)
+
+
+if __name__ == '__main__':
+   gin_config_file_path = 'data/gin_config_file.gin'
+   gin.parse_config_file(gin_config_file_path)
+   subtract_main() 
