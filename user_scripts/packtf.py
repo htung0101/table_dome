@@ -1,12 +1,13 @@
 import os
-import config
 
 
-import os, sys, glob, cv2, pickle
+import os, sys, glob, pickle
+import cv2
 import numpy as np
 import tensorflow as tf
 import scipy.misc
 import utils_py
+import argparse
 
 import matplotlib as mpl
 mpl.use('Agg')
@@ -75,7 +76,7 @@ def process_xyz(depth,pix_T_cam):
 def job(data_dir, save_dir):
 
     #data_dir = '/projects/katefgroup/gauravp/{}'.format(folderName)
-    st()
+    #st()
     color_dir = '%s/colorData' % data_dir
     depth_dir = '%s/depthData' % data_dir
 
@@ -170,7 +171,7 @@ def job(data_dir, save_dir):
             pix_T_cam = utils_py.scale_projection_mat(pix_T_cam, sx, sy)
             all_pix_T_cams.append(pix_T_cam.astype(np.float32))
             
-        print 'got all data from {} for frame {:05d}'.format(folderName,frame_ind)
+        print('got all data from {} for frame {:05d}'.format(folderName,frame_ind))
 
         all_cams = [0, 1, 3, 4, 5]
         # we can output all permutations
@@ -270,7 +271,7 @@ def job(data_dir, save_dir):
             sys.stdout.flush()
         # done cams
     # done frames
-    print 'done'
+    print('done')
 
 def main():
     # folders = ["Data2","Data3","Data4","Data5","Data6","Data7","Data9","Data10","Data11","Data12","Data13","newData1","newData2","newData5"]

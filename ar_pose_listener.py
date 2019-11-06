@@ -9,6 +9,7 @@ import argparse
 import numpy as np
 import ipdb
 st = ipdb.set_trace
+import tf
 
 def callback(data, args):
     cam_no = args[0]
@@ -21,17 +22,22 @@ def callback(data, args):
     qy = data.markers[0].pose.pose.orientation.y
     qz = data.markers[0].pose.pose.orientation.z
     qw = data.markers[0].pose.pose.orientation.w
+
+    #Convert pose and quaternion to 4x4 transformation matrix
+    M = tf.transformations.quaternion_matrix(np.asarray([qx, qy, qz, qw]))
+    t = np.asarray([x, y, z])
+    M[:-1,3] = t
+
     print("writing ar infor in to", args[1])
-    pose_dict = {
-        'position': np.asarray([x, y, z]),
-        'orientation': np.asarray([qx, qy, qz, qw])
-    }
+    # pose_dict = {
+    #     'position': np.asarray([x, y, z]),
+    #     'orientation': np.asarray([qx, qy, qz, qw])
+    # }
     
     #'/home/zhouxian/catkin_ws/src/calibrate/src/scripts/cam_{}_pose1111111111.txt'.format(cam_no)
 
     with open(args[1], 'wb') as f:
-        pickle.dump(pose_dict, f)
-
+        pickle.dump(M, f)
     f.close()
 
 

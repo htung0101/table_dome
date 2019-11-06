@@ -99,7 +99,7 @@ def main():
 
     intrinsic_f = open(os.path.join(ar_data_path, "intrinsics.pkl"), "rb")
     intrinsic_mat =  pickle.load(intrinsic_f)
-    frame_id = 10
+    frame_id = 3
     pcd_list = []
     for cam_id in range(1, 1+num_cam):
         ar_tag_f = open(os.path.join(ar_data_path, "camera{}_ar_tag.pkl".format(cam_id)), "rb")

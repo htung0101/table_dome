@@ -4,6 +4,7 @@ import datetime
 import multiprocessing
 import time
 import timeit
+sys.path.append('/home/zhouxian/catkin_ws/src/calibrate/src/scripts')
 import config
 
 from utils.path import makedir
@@ -59,7 +60,7 @@ num_cam = config.NUM_CAM
 
 if config.checkerboard_record_name == "": # if it is empty, then generate a new one
     now = datetime.datetime.now()
-    checkerboard_record_name = f"TableDome_y{now.year}_m{now.month}_h{now.hour}_m{now.minute}_s{now.second}"
+    checkerboard_record_name = f"TableDome_y{now.year}_m{now.month}_d{now.date}_h{now.hour}_m{now.minute}_s{now.second}"
     data_path = os.path.join(config.checkerboard_data_root, checkerboard_record_name)
     makedir(data_path)
 

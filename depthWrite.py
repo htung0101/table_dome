@@ -7,8 +7,8 @@ import cv2
 import os
 import argparse
 import pickle
-import ipdb
-st=ipdb.set_trace
+#import ipdb
+#st=ipdb.set_trace
 # TODO: Remove this global declaration
 bridge = CvBridge()
 cnt = 0

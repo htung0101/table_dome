@@ -58,7 +58,7 @@ def check_artag_folder(artag_folder, data_path):
         print("ar_tag file does not exists, please check again: ", artag_folder_)
         sys.exit()
 
-    for cam_id in range(1, config.NUM_CAM+1):
+    for cam_id in range(3, 5):
         if not os.path.isfile(os.path.join(artag_folder_, f"camera{cam_id}_ar_tag.pkl")):
             print("ar tag folder is invalid", f"camera{cam_id}_ar_tag.pkl does not exists")
             sys.exit()
@@ -102,7 +102,7 @@ num_cam = config.NUM_CAM
 #all_process.append(process_cam_launch)
 
 processes_cam_hertz = []
-for cam_id in range(1, num_cam+1):
+for cam_id in range(3, 5):
     processes_cam_hertz.append(
         multiprocessing.Process(target=run_4hz_rgb, args=(cam_id,)))
     processes_cam_hertz.append(

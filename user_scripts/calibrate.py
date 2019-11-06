@@ -20,7 +20,7 @@ def run_launch_cameras():
 
 
 def run_rosrun(cam_id):
-   os.system(f"rosrun ar_track_alvar individualMarkersNoKinect 5.6 0.08 0.2 /camera{cam_id}/color/image_raw /camera1/aligned_depth_to_color/camera_info /camera{cam_id}_color_optical_frame")
+   os.system(f"rosrun ar_track_alvar individualMarkersNoKinect 4.5 0.08 0.2 /camera{cam_id}/color/image_raw /camera_info{cam_id} /camera{cam_id}_color_optical_frame")
 
 def run_ar_tag_save(cam_id, data_path):
    time.sleep(2)
@@ -70,7 +70,8 @@ print("===========================================")
 # colleting information for the cameras
 ar_tag_data_path = os.path.join(data_path, "ar_tag")
 makedir(ar_tag_data_path)
-for cam_id in range(1, num_cam+1):
+# for cam_id in range(1, num_cam+1):
+for cam_id in range(3, 5):
     print(f"####################calibrate cam {cam_id}##################")
     t1 = multiprocessing.Process(target=run_rosrun, args=(cam_id,))
     t2 = multiprocessing.Process(target=run_ar_tag_save, args=(cam_id, ar_tag_data_path,))
@@ -100,3 +101,4 @@ print("")
 print("If you no longer want it, please delete it with")
 print(f"rm -rf {data_path}")
 print("And remember to put away the ar tag before you start recording!")
+

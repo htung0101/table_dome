@@ -35,6 +35,7 @@ if __name__=="__main__":
         help='[depth, rgb]')
     parser.add_argument('--max_nframes', type=int, default=10000, required=False,\
         help='for which camera')
+    parser.add_argument('--node_suffix', type=str, default='', required=False, help='node name suffix')
 
     args = parser.parse_args()
 
@@ -42,7 +43,7 @@ if __name__=="__main__":
     #    print("Path doesnt exist!")
     #    os.makedirs(args.save_dir)
 
-    rospy.init_node('colorSubscribe')
+    rospy.init_node('colorSubscribe'+args.node_suffix)
 
 
     if args.mode == "depth":
@@ -65,10 +66,11 @@ if __name__=="__main__":
 
     print("number of {}:".format(args.mode), len(list_images))
     all_images = np.stack(list_images, 0)
-    with open(os.path.join(args.save_dir, "cam_{}_{}.npy".format(args.cam_no, prefix)),'wb') as f:
-        np.save(f, all_images)
 
     output_filename = os.path.join(args.save_dir, "data.yaml")
+
     with open(output_filename, 'w') as outfile:
         for data in list_msg:
+            with open(os.path.join(args.save_dir, "cam_{}_{}_{}.npy".format(args.cam_no, prefix, data.keys()[0])),'wb') as f:
+                np.save(f, list_images[data.keys()[0]])
             yaml.dump(data, outfile, default_flow_style=False)
