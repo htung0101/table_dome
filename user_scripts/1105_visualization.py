@@ -1,8 +1,10 @@
 import open3d as o3d
 import numpy as np
 import yaml
+import ipdb
+st = ipdb.set_trace
 import os
-
+import pickle
 def get_intrinsics_from_yaml(yaml_fname, cam_name):
   with open(yaml_fname, "r") as file_handle:
       calib_data = yaml.load(file_handle)
@@ -71,11 +73,15 @@ def visualize(unprojected_points, rgbs=None):
   o3d.visualization.draw_geometries(pcds)
 
 def make_scene():
-  cam_names_for_yaml = ['cam2', 'cam3']
+  cam_names_for_yaml = ['cam-1', 'cam3']
   depth_file_path = 'depths_1105.npy'
   color_file_path = 'colors_1105.npy'
   yaml_file_path = '/home/zhouxian/catkin_ws/src/calibrate/src/scripts/camchain-homezhouxiandataTableDomecam_calibrateTableDome_y2019_m10_h18_m54_s18Checkerboard_CalibData.yaml'
-  extrinsics_file_path = 'cam4_T_cam3.npy'
+  val = pickle.load(open("/home/zhouxian/data/TableDome/artag_only_TableDome_y2019_m11_d6_h22_m40_s31/ar_tag/intrinsics.pkl","rb"), encoding='latin1')
+
+  # extrinsics_file_path = 'cam4_T_cam3.npy'
+
+  extrinsics_file_path = 'smartest_calibration.npy'
 
   # intrinsics = list()
   # for cam_name in cam_names_for_yaml:
@@ -96,15 +102,20 @@ def make_scene():
   intrinsics_cam4[0][2] = 322.45697021484375
   intrinsics_cam4[1][2] = 244.1866455078125
 
+  intrinsics_cam3 = val["1"]
+  intrinsics_cam4 = val["4"]
+
   intrinsics = np.stack([intrinsics_cam3, intrinsics_cam4])
 
   # get the extrinsics now
-  extrinsics = np.load('cam4_T_cam3.npy')
+  extrinsics = np.load(extrinsics_file_path)
+  ext3 = extrinsics[0]
+  ext4 = extrinsics[3]
 
   # get the depths
   depths = get_depth_images(depth_file_path)
   rgbs = np.load(color_file_path)
-
+  # st()
   # make the scene
   unprojected_points = list()
   for i in range(len(cam_names_for_yaml)):
@@ -121,10 +132,15 @@ def make_scene():
   cam4_pts = unprojected_points[1]
 
   cam3_homogenous = np.c_[cam3_pts[:, 0], cam3_pts[:, 1], cam3_pts[:, 2], np.ones(len(cam3_pts))]
-  cam4_T_cam3_pts = np.dot(extrinsics, cam3_homogenous.T).T[:, :3]
+  cam3_at = np.dot(ext3, cam3_homogenous.T).T[:, :3]
+  # cam4_pts_ = np.dot(extrinsics, cam3_homogenous.T).T[:, :3]
+
+  cam4_homogenous = np.c_[cam4_pts, np.ones(len(cam4_pts))]
+  cam4_at = np.dot(ext4, cam4_homogenous.T).T[:, :3]
   
   # visualize [red, blue] predicted
-  visualize([cam4_T_cam3_pts, cam4_pts], rgbs=rgbs)
+  # visualize([cam4_pts_, cam4_pts], rgbs=rgbs)
+  visualize([cam3_at, cam4_at], rgbs=rgbs)
 
 if __name__ == '__main__':
   make_scene()

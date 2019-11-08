@@ -20,7 +20,8 @@ def run_launch_cameras():
 
 
 def run_rosrun(cam_id):
-   os.system(f"rosrun ar_track_alvar individualMarkersNoKinect 4.5 0.08 0.2 /camera{cam_id}/color/image_raw /camera_info{cam_id} /camera{cam_id}_color_optical_frame")
+   os.system(f"rosrun ar_track_alvar individualMarkersNoKinect 4.5 0.08 0.2 /camera{cam_id}/color/image_raw /camera{cam_id}/color/camera_info /camera{cam_id}_color_optical_frame")
+   # os.system(f"rosrun ar_track_alvar individualMarkersNoKinect 4.5 0.08 0.2 /camera{cam_id}/color/image_raw /camera_info{cam_id} /camera{cam_id}_color_optical_frame")
 
 def run_ar_tag_save(cam_id, data_path):
    time.sleep(2)
@@ -58,7 +59,7 @@ if config.artag_folder is not "":
 
 now = datetime.datetime.now()
 # maybe add user name that will be cute
-record_name = config.data_prefix + f"_TableDome_y{now.year}_m{now.month}_h{now.hour}_m{now.minute}_s{now.second}"
+record_name = config.data_prefix + f"_TableDome_y{now.year}_m{now.month}_d{now.day}_h{now.hour}_m{now.minute}_s{now.second}"
 
 data_path = os.path.join(data_root, record_name)
 makedir(data_path)
@@ -70,8 +71,8 @@ print("===========================================")
 # colleting information for the cameras
 ar_tag_data_path = os.path.join(data_path, "ar_tag")
 makedir(ar_tag_data_path)
-# for cam_id in range(1, num_cam+1):
-for cam_id in range(3, 5):
+for cam_id in range(1, num_cam+1):
+# for cam_id in range(3, 5):
     print(f"####################calibrate cam {cam_id}##################")
     t1 = multiprocessing.Process(target=run_rosrun, args=(cam_id,))
     t2 = multiprocessing.Process(target=run_ar_tag_save, args=(cam_id, ar_tag_data_path,))

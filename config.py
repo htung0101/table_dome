@@ -14,5 +14,7 @@ checkboard_yml = "" #"/home/zhouxian/data/TableDome/cam_calibrate/TableDome_y201
 
 data_root = "/home/zhouxian/data/TableDome"
 data_prefix = "artag_only"
+artag_folder = "/home/zhouxian/data/TableDome/artag_only_TableDome_y2019_m11_d8_h0_m45_s32"
 record_name = ""
-artag_folder = ""
+# record_name = ""
+# artag_folder = ""

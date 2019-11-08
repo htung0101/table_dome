@@ -6,6 +6,8 @@ import time
 
 import config
 from utils.path import makedir
+import sys
+
 import ipdb
 st=ipdb.set_trace
 # start the camera by running roslaunch
@@ -84,7 +86,11 @@ def get_record_name():
         is_new_record_name = True
         now = datetime.datetime.now()
         # maybe add user name that will be cute
-        record_name = config.data_prefix + f"_TableDome_y{now.year}_m{now.month}_h{now.hour}_m{now.minute}_s{now.second}"
+        # st()
+        if len(sys.argv) == 1:
+            record_name = config.data_prefix + f"_TableDome_y{now.year}_m{now.month}_h{now.hour}_m{now.minute}_s{now.second}"
+        else:
+            record_name = sys.argv[1]
         data_path = os.path.join(config.data_root, record_name)
         makedir(data_path)
     return is_new_record_name, record_name
@@ -102,7 +108,7 @@ num_cam = config.NUM_CAM
 #all_process.append(process_cam_launch)
 
 processes_cam_hertz = []
-for cam_id in range(3, 5):
+for cam_id in range(1, num_cam+1):
     processes_cam_hertz.append(
         multiprocessing.Process(target=run_4hz_rgb, args=(cam_id,)))
     processes_cam_hertz.append(

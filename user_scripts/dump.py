@@ -4,6 +4,7 @@ import multiprocessing
 from utils.path import makedir
 import ipdb
 import time
+import sys
 st=ipdb.set_trace
 def run_rgbd_time_writer(cam_id, save_dir, mode="depth"):
     max_nframes = int(config.FRAME_RATE * config.MAX_DURATION)
@@ -16,8 +17,12 @@ def run_rosbag_play(rosbag_filename):
 
 def run_intrinsic_writer(cam_id, save_dir):
     os.system(f"python intrinsics_write.py --cam_no {cam_id} --save_dir {save_dir}")
-
-record_root = os.path.join(config.data_root, config.record_name)
+# st()
+if len(sys.argv) == 1:
+  record_name = config.record_name
+else:
+  record_name = sys.argv[1]
+record_root = os.path.join(config.data_root, record_name)
 dump_folder = os.path.join(record_root, "rgb_depth_npy")
 makedir(dump_folder)
 
@@ -61,20 +66,26 @@ for process in processes:
     process.join()
 
 # build timestap compare
-cmd = f"python timeCompareGeorge.py --save_dir {dump_folder}"
-for cam_id in range(1, num_cam+1):
-   dump_rgb_cam_folder = os.path.join(dump_rgb_folder, f"Cam{cam_id}")
-   dump_depth_cam_folder = os.path.join(dump_depth_folder, f"Cam{cam_id}")
+# import ipdb
+# ipdb.set_trace()
+cmd = f"python timeCompareGeorge.py --path {dump_folder}"
+# for cam_id in range(1, num_cam+1):
+#    dump_rgb_cam_folder = os.path.join(dump_rgb_folder, f"Cam{cam_id}")
+#    dump_depth_cam_folder = os.path.join(dump_depth_folder, f"Cam{cam_id}")
 
-   cmd += f" --yaml_color{cam_id}Path "
-   cmd += os.path.join(dump_rgb_cam_folder, "data.yaml")
+#    cmd += f" --yaml_color{cam_id}Path "
+#    cmd += os.path.join(dump_rgb_cam_folder, "data.yaml")
 
-   cmd += f" --yaml_depth{cam_id}Path "
-   cmd += os.path.join(dump_depth_cam_folder, "data.yaml")
+#    cmd += f" --yaml_depth{cam_id}Path "
+#    cmd += os.path.join(dump_depth_cam_folder, "data.yaml")
 
 os.system(cmd)
 
+cmd = f"cp  /home/zhouxian/catkin_ws/src/calibrate/src/scripts/user_scripts/smartest_calibration.npy {config.data_root}/{record_name}/ar_tag/extrinsics.npy"
+print(f"written smartest_calibration to {config.data_root}/{record_name}/ar_tag")
+# st()
 
+os.system(cmd)
 ## write to tfrecord
 #tfrecord_folder = os.path.join(record_root, "tfrecord")
 #makedir(tfrecord_folder)
